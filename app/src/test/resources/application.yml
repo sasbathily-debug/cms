@@ -1,0 +1,6 @@
+security:
+  jwt:
+    secret: "test-secret-key-for-jwt-signing-must-be-at-least-32-bytes-long"
+    issuer: projet-api-test
+    access-token-ttl-minutes: 15
+    refresh-token-ttl-days: 7
