@@ -5,10 +5,14 @@ WORKDIR /workspace
 COPY pom.xml .
 COPY user/pom.xml user/pom.xml
 COPY security/pom.xml security/pom.xml
+COPY integration/pom.xml integration/pom.xml
+COPY site/pom.xml site/pom.xml
 COPY app/pom.xml app/pom.xml
 
 COPY user user
 COPY security security
+COPY integration integration
+COPY site site
 COPY app app
 
 RUN mvn -q -pl app -am clean package -DskipTests
