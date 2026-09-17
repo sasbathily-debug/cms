@@ -2,6 +2,7 @@ package com.projet.user.service;
 
 import com.projet.user.domain.User;
 import com.projet.user.dto.CreateUserCommand;
+import com.projet.user.dto.UpdateProfileRequest;
 import com.projet.user.dto.UserAuthView;
 import com.projet.user.dto.UserDto;
 import com.projet.user.exception.EmailAlreadyExistsException;
@@ -67,6 +68,16 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
         user.setEnabled(true);
+        return userMapper.toDto(userRepository.save(user));
+    }
+
+    @Override
+    public UserDto updateProfile(UUID id, UpdateProfileRequest request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setProfilePictureUrl(request.profilePictureUrl());
         return userMapper.toDto(userRepository.save(user));
     }
 }

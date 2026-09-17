@@ -1,6 +1,7 @@
 package com.projet.user.service;
 
 import com.projet.user.dto.CreateUserCommand;
+import com.projet.user.dto.UpdateProfileRequest;
 import com.projet.user.dto.UserAuthView;
 import com.projet.user.dto.UserDto;
 import org.springframework.data.domain.Page;
@@ -22,4 +23,6 @@ public interface UserService {
     Page<UserDto> findAll(Pageable pageable);
 
     UserDto confirmEmail(String email);
+
+    UserDto updateProfile(UUID id, UpdateProfileRequest request);
 }
