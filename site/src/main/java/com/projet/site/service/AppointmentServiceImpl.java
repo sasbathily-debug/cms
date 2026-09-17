@@ -24,14 +24,15 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper appointmentMapper;
 
     @Override
-    public AppointmentDto create(AppointmentRequest request) {
+    public AppointmentDto create(AppointmentRequest request, UUID userId) {
         Appointment appointment = new Appointment(
                 request.fullName(),
                 request.phone(),
                 request.email(),
                 request.reason(),
                 request.preferredDate(),
-                request.message()
+                request.message(),
+                userId
         );
         return appointmentMapper.toDto(appointmentRepository.save(appointment));
     }
@@ -43,6 +44,12 @@ public class AppointmentServiceImpl implements AppointmentService {
                 ? appointmentRepository.findAll(pageable)
                 : appointmentRepository.findByStatus(status, pageable);
         return page.map(appointmentMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable) {
+        return appointmentRepository.findByUserId(userId, pageable).map(appointmentMapper::toDto);
     }
 
     @Override
