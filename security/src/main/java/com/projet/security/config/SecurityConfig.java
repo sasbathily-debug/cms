@@ -42,6 +42,11 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**","/users/**", "/actuator/health/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         .requestMatchers(HttpMethod.POST, "/appointments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/site/services", "/site/faq", "/site/settings").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/appointments").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/appointments/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/site/services", "/site/faq").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/site/services/*", "/site/faq/*", "/site/settings").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/site/services/*", "/site/faq/*").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

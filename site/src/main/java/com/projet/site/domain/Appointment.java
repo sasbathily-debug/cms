@@ -48,6 +48,9 @@ public class Appointment {
 
     private String message;
 
+    @Column(name = "user_id")
+    private UUID userId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AppointmentStatus status = AppointmentStatus.PENDING;
@@ -56,12 +59,13 @@ public class Appointment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public Appointment(String fullName, String phone, String email, String reason, LocalDate preferredDate, String message) {
+    public Appointment(String fullName, String phone, String email, String reason, LocalDate preferredDate, String message, UUID userId) {
         this.fullName = fullName;
         this.phone = phone;
         this.email = email;
         this.reason = reason;
         this.preferredDate = preferredDate;
         this.message = message;
+        this.userId = userId;
     }
 }

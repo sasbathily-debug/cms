@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,8 +33,13 @@ public class AppointmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AppointmentDto create(@Valid @RequestBody AppointmentRequest request) {
-        return appointmentService.create(request);
+    public AppointmentDto create(@Valid @RequestBody AppointmentRequest request, Authentication authentication) {
+        return appointmentService.create(request, currentUserIdOrNull(authentication));
+    }
+
+    @GetMapping("/me")
+    public Page<AppointmentDto> findMine(Authentication authentication, Pageable pageable) {
+        return appointmentService.findAllForUser(UUID.fromString(authentication.getName()), pageable);
     }
 
     @GetMapping
@@ -43,5 +50,12 @@ public class AppointmentController {
     @PatchMapping("/{id}/status")
     public AppointmentDto updateStatus(@PathVariable UUID id, @Valid @RequestBody UpdateAppointmentStatusRequest request) {
         return appointmentService.updateStatus(id, request.status());
+    }
+
+    private UUID currentUserIdOrNull(Authentication authentication) {
+        if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+        return UUID.fromString(authentication.getName());
     }
 }

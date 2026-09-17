@@ -14,6 +14,7 @@ public record AppointmentDto(
         String reason,
         LocalDate preferredDate,
         String message,
+        UUID userId,
         AppointmentStatus status,
         Instant createdAt
 ) {
