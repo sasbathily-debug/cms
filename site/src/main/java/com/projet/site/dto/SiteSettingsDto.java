@@ -1,5 +1,7 @@
 package com.projet.site.dto;
 
+import java.time.Instant;
+
 public record SiteSettingsDto(
         String heroTitle,
         String heroSubtitle,
@@ -13,6 +15,7 @@ public record SiteSettingsDto(
         String phone,
         String email,
         String whatsappNumber,
-        String openingHours
+        String openingHours,
+        Instant nextAvailableSlot
 ) {
 }
