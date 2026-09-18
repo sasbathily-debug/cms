@@ -50,7 +50,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public Optional<UserAuthView> findAuthViewByEmail(String email) {
         return userRepository.findByEmail(email)
-                .map(u -> new UserAuthView(u.getId(), u.getEmail(), u.getPasswordHash(), u.getRole(), u.isEnabled()));
+                .map(u -> new UserAuthView(u.getId(), u.getEmail(), u.getFirstName(), u.getPasswordHash(), u.getRole(), u.isEnabled()));
     }
 
     @Override
