@@ -28,4 +28,13 @@ public class SiteExceptionHandler {
                 "message", ex.getMessage()
         ));
     }
+
+    @ExceptionHandler(DuplicateAvailabilityRuleException.class)
+    public ResponseEntity<Object> handleDuplicateRule(DuplicateAvailabilityRuleException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.CONFLICT.value(),
+                "message", ex.getMessage()
+        ));
+    }
 }

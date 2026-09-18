@@ -9,6 +9,7 @@ import com.projet.site.dto.AvailabilityRuleRequest;
 import com.projet.site.dto.AvailableSlotDto;
 import com.projet.site.dto.ScheduleExceptionDto;
 import com.projet.site.dto.ScheduleExceptionRequest;
+import com.projet.site.exception.DuplicateAvailabilityRuleException;
 import com.projet.site.exception.DuplicateScheduleExceptionException;
 import com.projet.site.exception.ResourceNotFoundException;
 import com.projet.site.mapper.AvailabilityRuleMapper;
@@ -54,6 +55,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
     @Override
     public AvailabilityRuleDto createRule(AvailabilityRuleRequest request) {
+        if (ruleRepository.existsByDayOfWeekAndStartTimeAndEndTime(
+                request.dayOfWeek(), request.startTime(), request.endTime())) {
+            throw new DuplicateAvailabilityRuleException(request.dayOfWeek(), request.startTime(), request.endTime());
+        }
         AvailabilityRule rule = new AvailabilityRule(
                 request.dayOfWeek(), request.startTime(), request.endTime(), request.slotDurationMinutes());
         return ruleMapper.toDto(ruleRepository.save(rule));
@@ -63,6 +68,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
     public AvailabilityRuleDto updateRule(UUID id, AvailabilityRuleRequest request) {
         AvailabilityRule rule = ruleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Règle introuvable : " + id));
+        if (ruleRepository.existsByDayOfWeekAndStartTimeAndEndTimeAndIdNot(
+                request.dayOfWeek(), request.startTime(), request.endTime(), id)) {
+            throw new DuplicateAvailabilityRuleException(request.dayOfWeek(), request.startTime(), request.endTime());
+        }
         rule.setDayOfWeek(request.dayOfWeek());
         rule.setStartTime(request.startTime());
         rule.setEndTime(request.endTime());
@@ -145,6 +154,7 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
         LocalDateTime now = LocalDateTime.now();
         List<AvailableSlotDto> slots = new ArrayList<>();
+        Set<String> addedSlots = new HashSet<>();
 
         for (LocalDate date = rangeStart; !date.isAfter(rangeEnd); date = date.plusDays(1)) {
             ScheduleException exception = exceptionsByDate.get(date);
@@ -171,7 +181,7 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     LocalTime slotTime = t;
                     boolean isPast = slotDate.isEqual(now.toLocalDate()) && slotTime.isBefore(now.toLocalTime());
                     boolean isBooked = booked.contains(bookedKey(slotDate, slotTime));
-                    if (!isPast && !isBooked) {
+                    if (!isPast && !isBooked && addedSlots.add(bookedKey(slotDate, slotTime))) {
                         slots.add(new AvailableSlotDto(slotDate, slotTime));
                     }
                     t = t.plusMinutes(range.durationMinutes());
