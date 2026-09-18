@@ -1,6 +1,7 @@
 package com.projet.security.exception;
 
 import com.projet.user.exception.EmailAlreadyExistsException;
+import com.projet.user.exception.InvalidCurrentPasswordException;
 import com.projet.user.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +51,11 @@ public class AuthExceptionHandler {
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<Object> handleUserNotFound(UserNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<Object> handleInvalidCurrentPassword(InvalidCurrentPasswordException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

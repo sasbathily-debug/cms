@@ -8,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.Instant;
-
 @Entity
 @Table(name = "site_settings")
 @Getter
@@ -55,7 +53,4 @@ public class SiteSettings {
 
     @Column(name = "opening_hours")
     private String openingHours;
-
-    @Column(name = "next_available_slot")
-    private Instant nextAvailableSlot;
 }

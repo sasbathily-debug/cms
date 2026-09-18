@@ -45,7 +45,8 @@ public class BrevoEmailSender implements EmailSender {
                 "sender", Map.of("email", senderEmail, "name", senderName),
                 "to", List.of(Map.of("email", message.to())),
                 "subject", message.subject(),
-                "textContent", message.body()
+                "textContent", message.text(),
+                "htmlContent", message.html()
         );
 
         restClient.post()

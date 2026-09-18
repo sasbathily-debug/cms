@@ -1,7 +1,9 @@
 package com.projet.site.service;
 
+import com.projet.integration.mail.EmailContent;
 import com.projet.integration.mail.EmailMessage;
 import com.projet.integration.mail.EmailSender;
+import com.projet.integration.mail.EmailTemplates;
 import com.projet.site.domain.Appointment;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.domain.AppointmentStatusEvent;
@@ -13,8 +15,8 @@ import com.projet.site.mapper.AppointmentMapper;
 import com.projet.site.mapper.AppointmentStatusEventMapper;
 import com.projet.site.repository.AppointmentRepository;
 import com.projet.site.repository.AppointmentStatusEventRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,6 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @Transactional
 public class AppointmentServiceImpl implements AppointmentService {
 
@@ -35,6 +36,22 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper appointmentMapper;
     private final AppointmentStatusEventMapper statusEventMapper;
     private final EmailSender emailSender;
+    private final String frontendUrl;
+
+    public AppointmentServiceImpl(
+            AppointmentRepository appointmentRepository,
+            AppointmentStatusEventRepository statusEventRepository,
+            AppointmentMapper appointmentMapper,
+            AppointmentStatusEventMapper statusEventMapper,
+            EmailSender emailSender,
+            @Value("${app.frontend-url}") String frontendUrl) {
+        this.appointmentRepository = appointmentRepository;
+        this.statusEventRepository = statusEventRepository;
+        this.appointmentMapper = appointmentMapper;
+        this.statusEventMapper = statusEventMapper;
+        this.emailSender = emailSender;
+        this.frontendUrl = frontendUrl;
+    }
 
     @Override
     public AppointmentDto create(AppointmentRequest request, UUID userId) {
@@ -44,6 +61,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.email(),
                 request.reason(),
                 request.preferredDate(),
+                request.preferredTime(),
                 request.message(),
                 userId
         );
@@ -106,13 +124,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (!StringUtils.hasText(appointment.getEmail())) {
             return;
         }
-        trySend(appointment.getEmail(), "Votre demande de rendez-vous a bien été reçue", """
-                Bonjour %s,
-
-                Nous avons bien reçu votre demande de rendez-vous (%s). Notre équipe vous confirme un créneau sous 24h ouvrées.
-
-                À bientôt,
-                Cabinet du Dr Aissatou Fall""".formatted(appointment.getFullName(), appointment.getReason()));
+        EmailContent content = EmailTemplates.appointmentReceived(
+                appointment.getFullName(), appointment.getReason(), frontendUrl + "/client");
+        trySend(appointment.getEmail(), content);
     }
 
     private void sendStatusChangeEmail(Appointment appointment) {
@@ -120,42 +134,25 @@ public class AppointmentServiceImpl implements AppointmentService {
             return;
         }
 
-        String subject;
-        String body;
-        switch (appointment.getStatus()) {
+        EmailContent content = switch (appointment.getStatus()) {
             case CONFIRMED -> {
-                subject = "Votre rendez-vous est confirmé";
                 String dateInfo = appointment.getPreferredDate() != null
                         ? " pour le " + appointment.getPreferredDate()
                         : "";
-                body = """
-                        Bonjour %s,
-
-                        Votre rendez-vous a été confirmé%s.
-
-                        À bientôt,
-                        Cabinet du Dr Aissatou Fall""".formatted(appointment.getFullName(), dateInfo);
+                yield EmailTemplates.appointmentConfirmed(appointment.getFullName(), dateInfo, frontendUrl + "/client");
             }
-            case CANCELLED -> {
-                subject = "Votre rendez-vous a été annulé";
-                body = """
-                        Bonjour %s,
+            case CANCELLED -> EmailTemplates.appointmentCancelled(appointment.getFullName(), frontendUrl + "/#rdv");
+            default -> null;
+        };
 
-                        Votre demande de rendez-vous a été annulée. N'hésitez pas à nous recontacter pour reprogrammer.
-
-                        Cabinet du Dr Aissatou Fall""".formatted(appointment.getFullName());
-            }
-            default -> {
-                return;
-            }
+        if (content != null) {
+            trySend(appointment.getEmail(), content);
         }
-
-        trySend(appointment.getEmail(), subject, body);
     }
 
-    private void trySend(String to, String subject, String body) {
+    private void trySend(String to, EmailContent content) {
         try {
-            emailSender.send(new EmailMessage(to, subject, body));
+            emailSender.send(new EmailMessage(to, content.subject(), content.text(), content.html()));
         } catch (RuntimeException e) {
             log.warn("Échec de l'envoi d'email à {} : {}", to, e.getMessage());
         }
