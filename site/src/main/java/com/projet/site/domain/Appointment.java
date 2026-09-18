@@ -18,6 +18,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
@@ -46,6 +47,9 @@ public class Appointment {
     @Column(name = "preferred_date")
     private LocalDate preferredDate;
 
+    @Column(name = "preferred_time")
+    private LocalTime preferredTime;
+
     private String message;
 
     @Column(name = "user_id")
@@ -59,12 +63,14 @@ public class Appointment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public Appointment(String fullName, String phone, String email, String reason, LocalDate preferredDate, String message, UUID userId) {
+    public Appointment(String fullName, String phone, String email, String reason, LocalDate preferredDate,
+                        LocalTime preferredTime, String message, UUID userId) {
         this.fullName = fullName;
         this.phone = phone;
         this.email = email;
         this.reason = reason;
         this.preferredDate = preferredDate;
+        this.preferredTime = preferredTime;
         this.message = message;
         this.userId = userId;
     }

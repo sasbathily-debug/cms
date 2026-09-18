@@ -19,4 +19,13 @@ public class SiteExceptionHandler {
                 "message", ex.getMessage()
         ));
     }
+
+    @ExceptionHandler(DuplicateScheduleExceptionException.class)
+    public ResponseEntity<Object> handleDuplicateException(DuplicateScheduleExceptionException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.CONFLICT.value(),
+                "message", ex.getMessage()
+        ));
+    }
 }

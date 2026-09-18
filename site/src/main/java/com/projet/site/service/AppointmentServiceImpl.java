@@ -44,6 +44,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.email(),
                 request.reason(),
                 request.preferredDate(),
+                request.preferredTime(),
                 request.message(),
                 userId
         );

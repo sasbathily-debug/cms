@@ -1,5 +1,6 @@
 package com.projet.user.service;
 
+import com.projet.user.dto.ChangePasswordRequest;
 import com.projet.user.dto.CreateUserCommand;
 import com.projet.user.dto.UpdateProfileRequest;
 import com.projet.user.dto.UserAuthView;
@@ -25,4 +26,6 @@ public interface UserService {
     UserDto confirmEmail(String email);
 
     UserDto updateProfile(UUID id, UpdateProfileRequest request);
+
+    void changePassword(UUID id, ChangePasswordRequest request);
 }
