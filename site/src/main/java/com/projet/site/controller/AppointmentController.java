@@ -3,6 +3,7 @@ package com.projet.site.controller;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
+import com.projet.site.dto.AppointmentStatusEventDto;
 import com.projet.site.dto.UpdateAppointmentStatusRequest;
 import com.projet.site.service.AppointmentService;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -52,10 +54,20 @@ public class AppointmentController {
         return appointmentService.updateStatus(id, request.status());
     }
 
+    @GetMapping("/{id}/history")
+    public List<AppointmentStatusEventDto> history(@PathVariable UUID id, Authentication authentication) {
+        return appointmentService.findHistory(id, currentUserIdOrNull(authentication), isAdmin(authentication));
+    }
+
     private UUID currentUserIdOrNull(Authentication authentication) {
         if (authentication == null || authentication instanceof AnonymousAuthenticationToken) {
             return null;
         }
         return UUID.fromString(authentication.getName());
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null
+                && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

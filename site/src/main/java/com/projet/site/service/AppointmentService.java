@@ -3,9 +3,11 @@ package com.projet.site.service;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
+import com.projet.site.dto.AppointmentStatusEventDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface AppointmentService {
@@ -17,4 +19,6 @@ public interface AppointmentService {
     Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable);
 
     AppointmentDto updateStatus(UUID id, AppointmentStatus status);
+
+    List<AppointmentStatusEventDto> findHistory(UUID appointmentId, UUID requesterId, boolean isAdmin);
 }

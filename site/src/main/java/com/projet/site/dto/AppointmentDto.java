@@ -4,6 +4,7 @@ import com.projet.site.domain.AppointmentStatus;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 public record AppointmentDto(
@@ -13,6 +14,7 @@ public record AppointmentDto(
         String email,
         String reason,
         LocalDate preferredDate,
+        LocalTime preferredTime,
         String message,
         UUID userId,
         AppointmentStatus status,

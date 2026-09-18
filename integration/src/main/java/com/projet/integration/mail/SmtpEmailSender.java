@@ -1,10 +1,11 @@
 package com.projet.integration.mail;
 
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -23,14 +24,19 @@ public class SmtpEmailSender implements EmailSender {
 
     @Override
     public void send(EmailMessage message) {
-        SimpleMailMessage mail = new SimpleMailMessage();
-        if (StringUtils.hasText(from)) {
-            mail.setFrom(from);
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            if (StringUtils.hasText(from)) {
+                helper.setFrom(from);
+            }
+            helper.setTo(message.to());
+            helper.setSubject(message.subject());
+            helper.setText(message.text(), message.html());
+            javaMailSender.send(mimeMessage);
+            log.info("Email envoyé à {}", message.to());
+        } catch (Exception e) {
+            throw new RuntimeException("Échec de l'envoi de l'email à " + message.to(), e);
         }
-        mail.setTo(message.to());
-        mail.setSubject(message.subject());
-        mail.setText(message.body());
-        javaMailSender.send(mail);
-        log.info("Email envoyé à {}", message.to());
     }
 }

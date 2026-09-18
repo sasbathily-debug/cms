@@ -1,7 +1,10 @@
 package com.projet.security.service;
 
+import com.projet.integration.mail.EmailContent;
 import com.projet.integration.mail.EmailMessage;
 import com.projet.integration.mail.EmailSender;
+import com.projet.integration.mail.EmailTemplates;
+import com.projet.security.config.OtpProperties;
 import com.projet.security.dto.AuthResponse;
 import com.projet.security.dto.LoginRequest;
 import com.projet.security.dto.RegisterRequest;
@@ -38,6 +41,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final OtpService otpService;
+    private final OtpProperties otpProperties;
     private final EmailSender emailSender;
 
     public RegisterResponse register(RegisterRequest request) {
@@ -50,7 +54,7 @@ public class AuthService {
                 false
         ));
 
-        sendOtp(request.email());
+        sendOtp(request.email(), request.firstName());
 
         return new RegisterResponse("Compte créé. Vérifiez votre email pour le code de confirmation.");
     }
@@ -72,7 +76,7 @@ public class AuthService {
             throw new AccountAlreadyVerifiedException(email);
         }
 
-        sendOtp(email);
+        sendOtp(email, user.firstName());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -106,13 +110,10 @@ public class AuthService {
         refreshTokenService.revoke(UUID.fromString(claims.getSubject()));
     }
 
-    private void sendOtp(String email) {
+    private void sendOtp(String email, String firstName) {
         String code = otpService.generate(email);
-        emailSender.send(new EmailMessage(
-                email,
-                "Vérifiez votre compte",
-                "Votre code de vérification est : " + code + " (valide 10 minutes)."
-        ));
+        EmailContent content = EmailTemplates.otpVerification(firstName, code, (int) otpProperties.ttlMinutes());
+        emailSender.send(new EmailMessage(email, content.subject(), content.text(), content.html()));
     }
 
     private AuthResponse issueTokens(UUID userId, String email, String role) {

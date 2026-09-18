@@ -18,6 +18,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -46,6 +47,17 @@ public class User {
 
     @Column(name = "profile_picture_url")
     private String profilePictureUrl;
+
+    private String phone;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "email_reminders", nullable = false)
+    private boolean emailReminders = true;
+
+    @Column(name = "sms_reminders", nullable = false)
+    private boolean smsReminders = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
