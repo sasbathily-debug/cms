@@ -45,6 +45,7 @@ public class SiteSettingsServiceImpl implements SiteSettingsService {
         settings.setEmail(request.email());
         settings.setWhatsappNumber(request.whatsappNumber());
         settings.setOpeningHours(request.openingHours());
+        settings.setNextAvailableSlot(request.nextAvailableSlot());
         return siteSettingsMapper.toDto(siteSettingsRepository.save(settings));
     }
 }

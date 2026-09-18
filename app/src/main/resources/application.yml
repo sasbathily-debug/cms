@@ -36,6 +36,11 @@ security:
 app:
   mail:
     provider: ${MAIL_PROVIDER:log}
+    from: ${MAIL_FROM:}
+    brevo:
+      api-key: ${BREVO_API_KEY:}
+      sender-email: ${BREVO_SENDER_EMAIL:}
+      sender-name: ${BREVO_SENDER_NAME:Dr Aissatou Fall}
   storage:
     provider: ${STORAGE_PROVIDER:local}
     local:
