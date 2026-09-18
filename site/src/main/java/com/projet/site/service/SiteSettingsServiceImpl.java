@@ -38,7 +38,6 @@ public class SiteSettingsServiceImpl implements SiteSettingsService {
         settings.setYearsExperience(request.yearsExperience());
         settings.setPatientsCount(request.patientsCount());
         settings.setSatisfactionRating(request.satisfactionRating());
-        settings.setHeroImageUrl(request.heroImageUrl());
         settings.setAboutImageUrl(request.aboutImageUrl());
         settings.setAddress(request.address());
         settings.setPhone(request.phone());

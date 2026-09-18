@@ -7,7 +7,6 @@ public record SiteSettingsDto(
         String yearsExperience,
         String patientsCount,
         String satisfactionRating,
-        String heroImageUrl,
         String aboutImageUrl,
         String address,
         String phone,
