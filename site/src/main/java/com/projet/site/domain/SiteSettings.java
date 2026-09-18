@@ -36,9 +36,6 @@ public class SiteSettings {
     @Column(name = "satisfaction_rating")
     private String satisfactionRating;
 
-    @Column(name = "hero_image_url")
-    private String heroImageUrl;
-
     @Column(name = "about_image_url")
     private String aboutImageUrl;
 
