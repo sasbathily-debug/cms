@@ -3,5 +3,7 @@ package com.projet.site.domain;
 public enum AppointmentStatus {
     PENDING,
     CONFIRMED,
-    CANCELLED
+    CANCELLED,
+    COMPLETED,
+    NO_SHOW
 }
