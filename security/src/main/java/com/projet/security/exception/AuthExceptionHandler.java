@@ -45,7 +45,12 @@ public class AuthExceptionHandler {
 
     @ExceptionHandler(EmailAlreadyExistsException.class)
     public ResponseEntity<Object> handleEmailExists(EmailAlreadyExistsException ex) {
-        return error(HttpStatus.CONFLICT, ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.CONFLICT.value(),
+                "message", ex.getMessage(),
+                "accountVerified", ex.isAccountVerified()
+        ));
     }
 
     @ExceptionHandler(UserNotFoundException.class)

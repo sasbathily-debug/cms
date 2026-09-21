@@ -32,9 +32,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto createUser(CreateUserCommand command) {
-        if (userRepository.existsByEmail(command.email())) {
-            throw new EmailAlreadyExistsException(command.email());
-        }
+        userRepository.findByEmail(command.email()).ifPresent(existing -> {
+            throw new EmailAlreadyExistsException(command.email(), existing.isEnabled());
+        });
         User user = new User(command.email(), command.passwordHash(), command.firstName(), command.lastName(), command.role());
         user.setEnabled(command.enabled());
         return userMapper.toDto(userRepository.save(user));
