@@ -8,4 +8,6 @@ package com.projet.integration.notification;
 public interface WhatsAppNotifier {
 
     void sendAppointmentConfirmed(String phone, String fullName, String dateInfo, String ctaUrl);
+
+    void sendAppointmentReminder(String phone, String fullName, String dateInfo, String ctaUrl);
 }
