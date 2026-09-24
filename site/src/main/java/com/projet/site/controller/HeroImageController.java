@@ -3,6 +3,7 @@ package com.projet.site.controller;
 import com.projet.site.dto.CreateHeroImageRequest;
 import com.projet.site.dto.HeroImageDto;
 import com.projet.site.dto.ReorderHeroImagesRequest;
+import com.projet.site.dto.UpdateHeroImageRequest;
 import com.projet.site.service.HeroImageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,11 @@ public class HeroImageController {
     @ResponseStatus(HttpStatus.CREATED)
     public HeroImageDto create(@Valid @RequestBody CreateHeroImageRequest request) {
         return heroImageService.create(request);
+    }
+
+    @PutMapping("/{id}")
+    public HeroImageDto update(@PathVariable UUID id, @Valid @RequestBody UpdateHeroImageRequest request) {
+        return heroImageService.update(id, request);
     }
 
     @PutMapping("/reorder")

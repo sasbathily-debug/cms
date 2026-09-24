@@ -17,4 +17,6 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
     Page<Appointment> findByUserId(UUID userId, Pageable pageable);
 
     List<Appointment> findByPreferredDateBetweenAndStatusIn(LocalDate from, LocalDate to, List<AppointmentStatus> statuses);
+
+    List<Appointment> findByPreferredDateAndStatusAndReminderSentFalse(LocalDate preferredDate, AppointmentStatus status);
 }

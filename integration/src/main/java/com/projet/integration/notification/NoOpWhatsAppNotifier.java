@@ -13,4 +13,9 @@ public class NoOpWhatsAppNotifier implements WhatsAppNotifier {
     public void sendAppointmentConfirmed(String phone, String fullName, String dateInfo, String ctaUrl) {
         log.info("WhatsApp non configuré — confirmation non envoyée à {}", phone);
     }
+
+    @Override
+    public void sendAppointmentReminder(String phone, String fullName, String dateInfo, String ctaUrl) {
+        log.info("WhatsApp non configuré — rappel non envoyé à {}", phone);
+    }
 }

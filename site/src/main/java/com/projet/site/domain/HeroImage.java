@@ -35,6 +35,8 @@ public class HeroImage {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    private String title;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

@@ -15,6 +15,11 @@
     <dependencies>
         <dependency>
             <groupId>com.projet</groupId>
+            <artifactId>user</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.projet</groupId>
             <artifactId>integration</artifactId>
             <version>${project.version}</version>
         </dependency>

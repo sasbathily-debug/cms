@@ -58,6 +58,19 @@ public final class EmailTemplates {
         return new EmailContent(subject, text, wrap(subject, body, "Voir mes rendez-vous", appUrl));
     }
 
+    public static EmailContent appointmentReminder(String fullName, String dateInfo, String appUrl) {
+        String subject = "Rappel : votre rendez-vous a lieu demain";
+        String text = "Bonjour " + fullName + ",\n\nPetit rappel : votre rendez-vous a lieu demain" + dateInfo
+                + ".\n\nÀ demain,\nCabinet du Dr Aissatou Mamadou Fall";
+
+        String body = paragraph("Bonjour " + escape(fullName) + ",")
+                + statusBadge("Rappel", "#FDF0DC", "#B5762A")
+                + paragraph("Petit rappel : votre rendez-vous a lieu demain" + escape(dateInfo) + ".")
+                + paragraph("À demain !");
+
+        return new EmailContent(subject, text, wrap(subject, body, "Voir mes rendez-vous", appUrl));
+    }
+
     public static EmailContent appointmentCancelled(String fullName, String appUrl) {
         String subject = "Votre rendez-vous a été annulé";
         String text = "Bonjour " + fullName

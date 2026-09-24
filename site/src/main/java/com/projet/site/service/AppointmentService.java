@@ -21,4 +21,6 @@ public interface AppointmentService {
     AppointmentDto updateStatus(UUID id, AppointmentStatus status);
 
     List<AppointmentStatusEventDto> findHistory(UUID appointmentId, UUID requesterId, boolean isAdmin);
+
+    void sendDueReminders();
 }

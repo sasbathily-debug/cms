@@ -5,6 +5,9 @@ import com.projet.integration.mail.EmailMessage;
 import com.projet.integration.mail.EmailSender;
 import com.projet.integration.mail.EmailTemplates;
 import com.projet.integration.notification.WhatsAppNotifier;
+import com.projet.user.dto.UserDto;
+import com.projet.user.exception.UserNotFoundException;
+import com.projet.user.service.UserService;
 import com.projet.site.domain.Appointment;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.domain.AppointmentStatusEvent;
@@ -26,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,6 +44,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentStatusEventMapper statusEventMapper;
     private final EmailSender emailSender;
     private final WhatsAppNotifier whatsAppNotifier;
+    private final UserService userService;
     private final String frontendUrl;
 
     public AppointmentServiceImpl(
@@ -49,6 +54,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentStatusEventMapper statusEventMapper,
             EmailSender emailSender,
             WhatsAppNotifier whatsAppNotifier,
+            UserService userService,
             @Value("${app.frontend-url}") String frontendUrl) {
         this.appointmentRepository = appointmentRepository;
         this.statusEventRepository = statusEventRepository;
@@ -56,6 +62,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         this.statusEventMapper = statusEventMapper;
         this.emailSender = emailSender;
         this.whatsAppNotifier = whatsAppNotifier;
+        this.userService = userService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -135,6 +142,56 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .stream()
                 .map(statusEventMapper::toDto)
                 .toList();
+    }
+
+    @Override
+    public void sendDueReminders() {
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        List<Appointment> due = appointmentRepository.findByPreferredDateAndStatusAndReminderSentFalse(
+                tomorrow, AppointmentStatus.CONFIRMED);
+
+        for (Appointment appointment : due) {
+            try {
+                sendReminderNotifications(appointment);
+            } catch (RuntimeException e) {
+                log.warn("Échec de l'envoi du rappel pour le rendez-vous {} : {}", appointment.getId(), e.getMessage());
+            }
+            appointment.setReminderSent(true);
+            appointmentRepository.save(appointment);
+        }
+    }
+
+    private void sendReminderNotifications(Appointment appointment) {
+        boolean sendEmail = true;
+        boolean sendWhatsApp = true;
+
+        if (appointment.getUserId() != null) {
+            try {
+                UserDto user = userService.getById(appointment.getUserId());
+                sendEmail = user.emailReminders();
+                sendWhatsApp = user.smsReminders();
+            } catch (UserNotFoundException e) {
+                log.warn("Rappel : utilisateur {} introuvable, envoi par défaut", appointment.getUserId());
+            }
+        }
+
+        String dateInfo = appointment.getPreferredDate() != null
+                ? " pour le " + appointment.getPreferredDate() + " à " + appointment.getPreferredTime()
+                : "";
+        String ctaUrl = frontendUrl + "/client";
+
+        if (sendEmail && StringUtils.hasText(appointment.getEmail())) {
+            EmailContent content = EmailTemplates.appointmentReminder(appointment.getFullName(), dateInfo, ctaUrl);
+            trySend(appointment.getEmail(), content);
+        }
+
+        if (sendWhatsApp) {
+            try {
+                whatsAppNotifier.sendAppointmentReminder(appointment.getPhone(), appointment.getFullName(), dateInfo, ctaUrl);
+            } catch (RuntimeException e) {
+                log.warn("Échec de l'envoi WhatsApp à {} : {}", appointment.getPhone(), e.getMessage());
+            }
+        }
     }
 
     private void sendCreationEmail(Appointment appointment) {

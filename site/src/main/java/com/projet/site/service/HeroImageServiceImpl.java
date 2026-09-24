@@ -4,6 +4,7 @@ import com.projet.site.domain.HeroImage;
 import com.projet.site.dto.CreateHeroImageRequest;
 import com.projet.site.dto.HeroImageDto;
 import com.projet.site.dto.ReorderHeroImagesRequest;
+import com.projet.site.dto.UpdateHeroImageRequest;
 import com.projet.site.exception.ResourceNotFoundException;
 import com.projet.site.mapper.HeroImageMapper;
 import com.projet.site.repository.HeroImageRepository;
@@ -39,6 +40,15 @@ public class HeroImageServiceImpl implements HeroImageService {
                 .max()
                 .orElse(-1) + 1;
         HeroImage heroImage = new HeroImage(request.imageUrl(), nextOrder);
+        heroImage.setTitle(request.title());
+        return heroImageMapper.toDto(heroImageRepository.save(heroImage));
+    }
+
+    @Override
+    public HeroImageDto update(UUID id, UpdateHeroImageRequest request) {
+        HeroImage heroImage = heroImageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Image introuvable : " + id));
+        heroImage.setTitle(request.title());
         return heroImageMapper.toDto(heroImageRepository.save(heroImage));
     }
 
