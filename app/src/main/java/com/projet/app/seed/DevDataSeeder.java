@@ -23,16 +23,16 @@ public class DevDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        seed("admin@projet.local", "Admin123!", "Admin", "Système", Role.ADMIN);
-        seed("john.doe@projet.local", "Password123!", "John", "Doe", Role.USER);
-        seed("jane.doe@projet.local", "Password123!", "Jane", "Doe", Role.USER);
+        seed("admin@projet.local", "Admin123!", "Admin", "Système", "221770000001", Role.ADMIN);
+        seed("john.doe@projet.local", "Password123!", "John", "Doe", "221770000002", Role.USER);
+        seed("jane.doe@projet.local", "Password123!", "Jane", "Doe", "221770000003", Role.USER);
     }
 
-    private void seed(String email, String rawPassword, String firstName, String lastName, Role role) {
+    private void seed(String email, String rawPassword, String firstName, String lastName, String phone, Role role) {
         if (userService.findByEmail(email).isPresent()) {
             return;
         }
         userService.createUser(new CreateUserCommand(
-                email, passwordEncoder.encode(rawPassword), firstName, lastName, role, true));
+                email, passwordEncoder.encode(rawPassword), firstName, lastName, phone, role, true));
     }
 }

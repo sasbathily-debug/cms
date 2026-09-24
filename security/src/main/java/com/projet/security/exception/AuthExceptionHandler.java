@@ -2,6 +2,7 @@ package com.projet.security.exception;
 
 import com.projet.user.exception.EmailAlreadyExistsException;
 import com.projet.user.exception.InvalidCurrentPasswordException;
+import com.projet.user.exception.PhoneAlreadyExistsException;
 import com.projet.user.exception.UserNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +52,11 @@ public class AuthExceptionHandler {
                 "message", ex.getMessage(),
                 "accountVerified", ex.isAccountVerified()
         ));
+    }
+
+    @ExceptionHandler(PhoneAlreadyExistsException.class)
+    public ResponseEntity<Object> handlePhoneExists(PhoneAlreadyExistsException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(UserNotFoundException.class)

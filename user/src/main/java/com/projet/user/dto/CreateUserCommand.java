@@ -7,6 +7,7 @@ public record CreateUserCommand(
         String passwordHash,
         String firstName,
         String lastName,
+        String phone,
         Role role,
         boolean enabled
 ) {

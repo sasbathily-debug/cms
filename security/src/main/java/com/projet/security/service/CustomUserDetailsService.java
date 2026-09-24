@@ -15,9 +15,9 @@ public class CustomUserDetailsService implements UserDetailsService {
     private final UserService userService;
 
     @Override
-    public UserDetails loadUserByUsername(String email) {
-        UserAuthView user = userService.findAuthViewByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Aucun utilisateur pour l'email : " + email));
+    public UserDetails loadUserByUsername(String identifier) {
+        UserAuthView user = userService.findAuthViewByIdentifier(identifier)
+                .orElseThrow(() -> new UsernameNotFoundException("Aucun utilisateur pour : " + identifier));
 
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.email())

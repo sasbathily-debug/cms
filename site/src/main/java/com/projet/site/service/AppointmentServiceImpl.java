@@ -4,6 +4,7 @@ import com.projet.integration.mail.EmailContent;
 import com.projet.integration.mail.EmailMessage;
 import com.projet.integration.mail.EmailSender;
 import com.projet.integration.mail.EmailTemplates;
+import com.projet.integration.notification.WhatsAppNotifier;
 import com.projet.site.domain.Appointment;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.domain.AppointmentStatusEvent;
@@ -11,12 +12,14 @@ import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
 import com.projet.site.dto.AppointmentStatusEventDto;
 import com.projet.site.exception.ResourceNotFoundException;
+import com.projet.site.exception.SlotAlreadyBookedException;
 import com.projet.site.mapper.AppointmentMapper;
 import com.projet.site.mapper.AppointmentStatusEventMapper;
 import com.projet.site.repository.AppointmentRepository;
 import com.projet.site.repository.AppointmentStatusEventRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -36,6 +39,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentMapper appointmentMapper;
     private final AppointmentStatusEventMapper statusEventMapper;
     private final EmailSender emailSender;
+    private final WhatsAppNotifier whatsAppNotifier;
     private final String frontendUrl;
 
     public AppointmentServiceImpl(
@@ -44,12 +48,14 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentMapper appointmentMapper,
             AppointmentStatusEventMapper statusEventMapper,
             EmailSender emailSender,
+            WhatsAppNotifier whatsAppNotifier,
             @Value("${app.frontend-url}") String frontendUrl) {
         this.appointmentRepository = appointmentRepository;
         this.statusEventRepository = statusEventRepository;
         this.appointmentMapper = appointmentMapper;
         this.statusEventMapper = statusEventMapper;
         this.emailSender = emailSender;
+        this.whatsAppNotifier = whatsAppNotifier;
         this.frontendUrl = frontendUrl;
     }
 
@@ -65,7 +71,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.message(),
                 userId
         );
-        Appointment saved = appointmentRepository.save(appointment);
+        boolean slotChosen = request.preferredDate() != null && request.preferredTime() != null;
+        if (slotChosen) {
+            appointment.setStatus(AppointmentStatus.CONFIRMED);
+        }
+
+        Appointment saved;
+        try {
+            saved = appointmentRepository.saveAndFlush(appointment);
+        } catch (DataIntegrityViolationException e) {
+            throw new SlotAlreadyBookedException();
+        }
+
         statusEventRepository.save(new AppointmentStatusEvent(saved.getId(), null, saved.getStatus()));
         sendCreationEmail(saved);
         return appointmentMapper.toDto(saved);
@@ -121,6 +138,10 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private void sendCreationEmail(Appointment appointment) {
+        if (appointment.getStatus() == AppointmentStatus.CONFIRMED) {
+            sendConfirmedNotifications(appointment);
+            return;
+        }
         if (!StringUtils.hasText(appointment.getEmail())) {
             return;
         }
@@ -130,23 +151,39 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private void sendStatusChangeEmail(Appointment appointment) {
+        if (appointment.getStatus() == AppointmentStatus.CONFIRMED) {
+            sendConfirmedNotifications(appointment);
+            return;
+        }
         if (!StringUtils.hasText(appointment.getEmail())) {
             return;
         }
 
         EmailContent content = switch (appointment.getStatus()) {
-            case CONFIRMED -> {
-                String dateInfo = appointment.getPreferredDate() != null
-                        ? " pour le " + appointment.getPreferredDate()
-                        : "";
-                yield EmailTemplates.appointmentConfirmed(appointment.getFullName(), dateInfo, frontendUrl + "/client");
-            }
             case CANCELLED -> EmailTemplates.appointmentCancelled(appointment.getFullName(), frontendUrl + "/#rdv");
             default -> null;
         };
 
         if (content != null) {
             trySend(appointment.getEmail(), content);
+        }
+    }
+
+    private void sendConfirmedNotifications(Appointment appointment) {
+        String dateInfo = appointment.getPreferredDate() != null
+                ? " pour le " + appointment.getPreferredDate() + " à " + appointment.getPreferredTime()
+                : "";
+        String ctaUrl = frontendUrl + "/client";
+
+        if (StringUtils.hasText(appointment.getEmail())) {
+            EmailContent content = EmailTemplates.appointmentConfirmed(appointment.getFullName(), dateInfo, ctaUrl);
+            trySend(appointment.getEmail(), content);
+        }
+
+        try {
+            whatsAppNotifier.sendAppointmentConfirmed(appointment.getPhone(), appointment.getFullName(), dateInfo, ctaUrl);
+        } catch (RuntimeException e) {
+            log.warn("Échec de l'envoi WhatsApp à {} : {}", appointment.getPhone(), e.getMessage());
         }
     }
 
