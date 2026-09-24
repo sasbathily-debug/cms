@@ -37,4 +37,13 @@ public class SiteExceptionHandler {
                 "message", ex.getMessage()
         ));
     }
+
+    @ExceptionHandler(SlotAlreadyBookedException.class)
+    public ResponseEntity<Object> handleSlotAlreadyBooked(SlotAlreadyBookedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.CONFLICT.value(),
+                "message", ex.getMessage()
+        ));
+    }
 }

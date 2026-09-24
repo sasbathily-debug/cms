@@ -19,6 +19,8 @@ public interface UserService {
 
     Optional<UserAuthView> findAuthViewByEmail(String email);
 
+    Optional<UserAuthView> findAuthViewByIdentifier(String identifier);
+
     UserDto getById(UUID id);
 
     Page<UserDto> findAll(Pageable pageable);

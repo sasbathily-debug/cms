@@ -39,13 +39,17 @@ security:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  otp:
+    channel: ${OTP_CHANNEL:email}
+  whatsapp:
+    enabled: ${WHATSAPP_ENABLED:false}
   mail:
     provider: ${MAIL_PROVIDER:log}
     from: ${MAIL_FROM:}
     brevo:
       api-key: ${BREVO_API_KEY:}
       sender-email: ${BREVO_SENDER_EMAIL:}
-      sender-name: ${BREVO_SENDER_NAME:Dr Aissatou Fall}
+      sender-name: ${BREVO_SENDER_NAME:Dr Aissatou Mamadou Fall}
   storage:
     provider: ${STORAGE_PROVIDER:local}
     local:

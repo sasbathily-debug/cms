@@ -13,7 +13,7 @@ public final class EmailTemplates {
     private static final String INK_900 = "#1C231D";
     private static final String INK_600 = "#5B6459";
     private static final String BORDER = "#E6DCC4";
-    private static final String PRACTICE_NAME = "Dr Aissatou Fall";
+    private static final String PRACTICE_NAME = "Dr Aissatou Mamadou Fall";
     private static final String PRACTICE_TAGLINE = "Endocrinologie &amp; Nutrition &middot; Dakar";
 
     private EmailTemplates() {
@@ -22,7 +22,7 @@ public final class EmailTemplates {
     public static EmailContent otpVerification(String firstName, String code, int ttlMinutes) {
         String subject = "Votre code de vérification";
         String text = "Bonjour " + firstName + ",\n\nVotre code de vérification est : " + code
-                + " (valide " + ttlMinutes + " minutes).\n\nCabinet du Dr Aissatou Fall";
+                + " (valide " + ttlMinutes + " minutes).\n\nCabinet du Dr Aissatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(firstName) + ",")
                 + paragraph("Voici votre code de vérification pour activer votre compte :")
@@ -35,7 +35,7 @@ public final class EmailTemplates {
     public static EmailContent appointmentReceived(String fullName, String reason, String appUrl) {
         String subject = "Votre demande de rendez-vous a bien été reçue";
         String text = "Bonjour " + fullName + ",\n\nNous avons bien reçu votre demande de rendez-vous (" + reason
-                + "). Notre équipe vous confirme un créneau sous 24h ouvrées.\n\nCabinet du Dr Aissatou Fall";
+                + "). Notre équipe vous confirme un créneau sous 24h ouvrées.\n\nCabinet du Dr Aissatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(fullName) + ",")
                 + paragraph("Nous avons bien reçu votre demande de rendez-vous :")
@@ -48,7 +48,7 @@ public final class EmailTemplates {
     public static EmailContent appointmentConfirmed(String fullName, String dateInfo, String appUrl) {
         String subject = "Votre rendez-vous est confirmé";
         String text = "Bonjour " + fullName + ",\n\nVotre rendez-vous a été confirmé" + dateInfo
-                + ".\n\nÀ bientôt,\nCabinet du Dr Aissatou Fall";
+                + ".\n\nÀ bientôt,\nCabinet du Dr Aissatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(fullName) + ",")
                 + statusBadge("Confirmé", "#E3F1E6", "#2E7D46")
@@ -62,7 +62,7 @@ public final class EmailTemplates {
         String subject = "Votre rendez-vous a été annulé";
         String text = "Bonjour " + fullName
                 + ",\n\nVotre demande de rendez-vous a été annulée. N'hésitez pas à nous recontacter pour reprogrammer."
-                + "\n\nCabinet du Dr Aissatou Fall";
+                + "\n\nCabinet du Dr Aissatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(fullName) + ",")
                 + statusBadge("Annulé", "#FBE7E6", "#B2453B")
