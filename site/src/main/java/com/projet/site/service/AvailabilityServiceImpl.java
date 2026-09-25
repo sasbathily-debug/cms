@@ -146,7 +146,7 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
         Set<String> booked = appointmentRepository
                 .findByPreferredDateBetweenAndStatusIn(
-                        rangeStart, rangeEnd, List.of(AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED))
+                        rangeStart, rangeEnd, List.of(AppointmentStatus.CONFIRMED))
                 .stream()
                 .filter(a -> a.getPreferredDate() != null && a.getPreferredTime() != null)
                 .map(a -> bookedKey(a.getPreferredDate(), a.getPreferredTime()))

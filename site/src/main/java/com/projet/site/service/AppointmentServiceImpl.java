@@ -78,11 +78,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.message(),
                 userId
         );
-        boolean slotChosen = request.preferredDate() != null && request.preferredTime() != null;
-        if (slotChosen) {
-            appointment.setStatus(AppointmentStatus.CONFIRMED);
-        }
-
         Appointment saved;
         try {
             saved = appointmentRepository.saveAndFlush(appointment);
@@ -91,7 +86,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
 
         statusEventRepository.save(new AppointmentStatusEvent(saved.getId(), null, saved.getStatus()));
-        sendCreationEmail(saved);
+        sendConfirmedNotifications(saved);
         return appointmentMapper.toDto(saved);
     }
 
@@ -192,19 +187,6 @@ public class AppointmentServiceImpl implements AppointmentService {
                 log.warn("Échec de l'envoi WhatsApp à {} : {}", appointment.getPhone(), e.getMessage());
             }
         }
-    }
-
-    private void sendCreationEmail(Appointment appointment) {
-        if (appointment.getStatus() == AppointmentStatus.CONFIRMED) {
-            sendConfirmedNotifications(appointment);
-            return;
-        }
-        if (!StringUtils.hasText(appointment.getEmail())) {
-            return;
-        }
-        EmailContent content = EmailTemplates.appointmentReceived(
-                appointment.getFullName(), appointment.getReason(), frontendUrl + "/client");
-        trySend(appointment.getEmail(), content);
     }
 
     private void sendStatusChangeEmail(Appointment appointment) {

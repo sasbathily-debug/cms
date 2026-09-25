@@ -8,9 +8,7 @@ package com.projet.integration.mail;
 public final class EmailTemplates {
 
     private static final String FOREST = "#142B22";
-    private static final String ACCENT = "#E0873F";
     private static final String CREAM = "#FBF6EC";
-    private static final String INK_900 = "#1C231D";
     private static final String INK_600 = "#5B6459";
     private static final String BORDER = "#E6DCC4";
     private static final String PRACTICE_NAME = "Dr Aissatou Mamadou Fall";
@@ -30,19 +28,6 @@ public final class EmailTemplates {
                 + paragraph("Ce code est valable " + ttlMinutes + " minutes.");
 
         return new EmailContent(subject, text, wrap(subject, body, null, null));
-    }
-
-    public static EmailContent appointmentReceived(String fullName, String reason, String appUrl) {
-        String subject = "Votre demande de rendez-vous a bien été reçue";
-        String text = "Bonjour " + fullName + ",\n\nNous avons bien reçu votre demande de rendez-vous (" + reason
-                + "). Notre équipe vous confirme un créneau sous 24h ouvrées.\n\nCabinet du Dr Aissatou Mamadou Fall";
-
-        String body = paragraph("Bonjour " + escape(fullName) + ",")
-                + paragraph("Nous avons bien reçu votre demande de rendez-vous :")
-                + infoBox(escape(reason))
-                + noteBox("Notre équipe vous confirme un créneau sous 24h ouvrées.");
-
-        return new EmailContent(subject, text, wrap(subject, body, "Voir mes rendez-vous", appUrl));
     }
 
     public static EmailContent appointmentConfirmed(String fullName, String dateInfo, String appUrl) {
@@ -93,17 +78,6 @@ public final class EmailTemplates {
                 + "background:" + CREAM + ";text-align:center;\">"
                 + "<span style=\"font-family:'Courier New',monospace;font-size:28px;font-weight:700;letter-spacing:6px;color:"
                 + FOREST + ";\">" + escape(code) + "</span></div>";
-    }
-
-    private static String infoBox(String content) {
-        return "<div style=\"margin:0 0 16px;padding:14px 16px;border-radius:10px;background:" + CREAM + ";"
-                + "font-family:'Courier New',monospace;font-size:14px;color:" + INK_900 + ";\">" + content + "</div>";
-    }
-
-    private static String noteBox(String content) {
-        return "<div style=\"margin:0 0 16px;padding:14px 16px;border-left:3px solid " + ACCENT + ";"
-                + "background:#FBF6EC;border-radius:0 8px 8px 0;font-size:14px;line-height:1.6;color:" + INK_600 + ";\">"
-                + content + "</div>";
     }
 
     private static String statusBadge(String label, String bg, String fg) {
