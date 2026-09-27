@@ -34,11 +34,6 @@ public class AuthExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(AccountAlreadyVerifiedException.class)
-    public ResponseEntity<Object> handleAlreadyVerified(AccountAlreadyVerifiedException ex) {
-        return error(HttpStatus.CONFLICT, ex.getMessage());
-    }
-
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<Object> handleInvalidToken(InvalidTokenException ex) {
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage());

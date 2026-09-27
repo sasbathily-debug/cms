@@ -1,12 +1,14 @@
 package com.projet.security.controller;
 
 import com.projet.security.dto.AuthResponse;
+import com.projet.security.dto.CompleteRegistrationRequest;
 import com.projet.security.dto.LoginRequest;
 import com.projet.security.dto.RefreshRequest;
 import com.projet.security.dto.RegisterRequest;
 import com.projet.security.dto.RegisterResponse;
 import com.projet.security.dto.ResendOtpRequest;
 import com.projet.security.dto.VerifyOtpRequest;
+import com.projet.security.dto.VerifyOtpResponse;
 import com.projet.security.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +35,13 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public AuthResponse verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+    public VerifyOtpResponse verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         return authService.verifyOtp(request.email(), request.otp());
+    }
+
+    @PostMapping("/complete-registration")
+    public AuthResponse completeRegistration(@Valid @RequestBody CompleteRegistrationRequest request) {
+        return authService.completeRegistration(request);
     }
 
     @PostMapping("/resend-otp")

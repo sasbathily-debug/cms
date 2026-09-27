@@ -3,10 +3,11 @@ package com.projet.security.service;
 import com.projet.integration.notification.OtpChannel;
 import com.projet.security.config.OtpProperties;
 import com.projet.security.dto.AuthResponse;
+import com.projet.security.dto.CompleteRegistrationRequest;
 import com.projet.security.dto.LoginRequest;
 import com.projet.security.dto.RegisterRequest;
 import com.projet.security.dto.RegisterResponse;
-import com.projet.security.exception.AccountAlreadyVerifiedException;
+import com.projet.security.dto.VerifyOtpResponse;
 import com.projet.security.exception.InvalidOtpException;
 import com.projet.security.exception.InvalidTokenException;
 import com.projet.security.jwt.JwtService;
@@ -14,6 +15,7 @@ import com.projet.user.domain.Role;
 import com.projet.user.dto.CreateUserCommand;
 import com.projet.user.dto.UserAuthView;
 import com.projet.user.dto.UserDto;
+import com.projet.user.exception.EmailAlreadyExistsException;
 import com.projet.user.exception.UserNotFoundException;
 import com.projet.user.service.UserService;
 import io.jsonwebtoken.Claims;
@@ -40,41 +42,57 @@ public class AuthService {
     private final OtpService otpService;
     private final OtpProperties otpProperties;
     private final OtpChannel otpChannel;
+    private final PendingRegistrationService pendingRegistrationService;
 
     public RegisterResponse register(RegisterRequest request) {
-        userService.createUser(new CreateUserCommand(
-                request.email(),
-                passwordEncoder.encode(request.password()),
-                request.firstName(),
-                request.lastName(),
-                request.phone(),
-                Role.USER,
-                false
-        ));
+        userService.findAuthViewByEmail(request.email()).ifPresent(existing -> {
+            throw new EmailAlreadyExistsException(request.email(), existing.enabled());
+        });
 
+        pendingRegistrationService.save(request.email(), request.firstName(), request.lastName(), request.phone());
         sendOtp(request.email(), request.phone(), request.firstName());
 
-        return new RegisterResponse("Compte créé. Vérifiez votre email pour le code de confirmation.");
+        return new RegisterResponse("Code de vérification envoyé par email.");
     }
 
-    public AuthResponse verifyOtp(String email, String otp) {
+    public VerifyOtpResponse verifyOtp(String email, String otp) {
         if (!otpService.verify(email, otp)) {
             throw new InvalidOtpException("Code invalide ou expiré");
         }
+        if (pendingRegistrationService.find(email).isEmpty()) {
+            throw new InvalidOtpException("Inscription introuvable ou expirée, recommencez.");
+        }
 
-        UserDto user = userService.confirmEmail(email);
+        pendingRegistrationService.markVerified(email);
+        return new VerifyOtpResponse("Email vérifié. Choisissez votre mot de passe.");
+    }
+
+    public AuthResponse completeRegistration(CompleteRegistrationRequest request) {
+        if (!pendingRegistrationService.isVerified(request.email())) {
+            throw new InvalidOtpException("Vérifiez d'abord votre email avant de choisir un mot de passe.");
+        }
+        PendingRegistration pending = pendingRegistrationService.find(request.email())
+                .orElseThrow(() -> new InvalidOtpException("Inscription expirée, recommencez."));
+
+        UserDto user = userService.createUser(new CreateUserCommand(
+                request.email(),
+                passwordEncoder.encode(request.password()),
+                pending.firstName(),
+                pending.lastName(),
+                pending.phone(),
+                Role.USER,
+                true
+        ));
+
+        pendingRegistrationService.clear(request.email());
         return issueTokens(user.id(), user.email(), user.role().name());
     }
 
     public void resendOtp(String email) {
-        UserAuthView user = userService.findAuthViewByEmail(email)
+        PendingRegistration pending = pendingRegistrationService.find(email)
                 .orElseThrow(() -> new UserNotFoundException(email));
 
-        if (user.enabled()) {
-            throw new AccountAlreadyVerifiedException(email);
-        }
-
-        sendOtp(email, user.phone(), user.firstName());
+        sendOtp(email, pending.phone(), pending.firstName());
     }
 
     public AuthResponse login(LoginRequest request) {
