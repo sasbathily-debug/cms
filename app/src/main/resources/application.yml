@@ -36,6 +36,7 @@ security:
     refresh-token-ttl-days: 7
   otp:
     ttl-minutes: ${OTP_TTL_MINUTES:10}
+    resend-cooldown-seconds: ${OTP_RESEND_COOLDOWN_SECONDS:60}
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}

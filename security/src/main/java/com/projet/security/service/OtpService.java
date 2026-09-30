@@ -1,6 +1,7 @@
 package com.projet.security.service;
 
 import com.projet.security.config.OtpProperties;
+import com.projet.security.exception.OtpRateLimitException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -13,12 +14,23 @@ import java.time.Duration;
 public class OtpService {
 
     private static final String KEY_PREFIX = "otp:";
+    private static final String COOLDOWN_PREFIX = "otp-cooldown:";
     private final SecureRandom random = new SecureRandom();
 
     private final RedisTemplate<String, String> redisTemplate;
     private final OtpProperties otpProperties;
 
+    /**
+     * A la fois generation du code ET pose du cooldown, en une seule operation
+     * atomique : evite qu'un appel concurrent passe entre les deux.
+     */
     public String generate(String email) {
+        Duration cooldown = Duration.ofSeconds(otpProperties.resendCooldownSeconds());
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(COOLDOWN_PREFIX + email, "1", cooldown);
+        if (Boolean.FALSE.equals(acquired)) {
+            throw new OtpRateLimitException("Veuillez patienter avant de redemander un code.");
+        }
+
         String code = String.format("%06d", random.nextInt(1_000_000));
         redisTemplate.opsForValue().set(KEY_PREFIX + email, code, Duration.ofMinutes(otpProperties.ttlMinutes()));
         return code;

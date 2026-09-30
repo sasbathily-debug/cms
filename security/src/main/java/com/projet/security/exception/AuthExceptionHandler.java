@@ -34,6 +34,11 @@ public class AuthExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(OtpRateLimitException.class)
+    public ResponseEntity<Object> handleOtpRateLimit(OtpRateLimitException ex) {
+        return error(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidTokenException.class)
     public ResponseEntity<Object> handleInvalidToken(InvalidTokenException ex) {
         return error(HttpStatus.UNAUTHORIZED, ex.getMessage());
