@@ -48,6 +48,15 @@ public class SecurityConfig {
                 .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // SessionManagementFilter runs CsrfAuthenticationStrategy (auto-wired whenever CSRF
+                // protection is enabled) any time it thinks "new" authentication just happened, which it
+                // decides via securityContextRepository.containsContext(request). Answering false (the
+                // default, honest answer for a stateless app) makes every JWT-authenticated request look
+                // "new" -- there's no session to remember "already handled" -- so it rotated the CSRF
+                // cookie on literally every authenticated call. A NoOpSecurityContextRepository that
+                // always answers true opts this fully stateless app out of that session-fixation
+                // machinery, which protects session-based apps and has no purpose here.
+                .securityContext(context -> context.securityContextRepository(new NoOpSecurityContextRepository()))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) ->
                                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
