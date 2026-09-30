@@ -1,22 +1,21 @@
 package com.projet.security.controller;
 
-import com.projet.security.dto.AuthResponse;
 import com.projet.security.dto.CompleteRegistrationRequest;
 import com.projet.security.dto.LoginRequest;
-import com.projet.security.dto.RefreshRequest;
 import com.projet.security.dto.RegisterRequest;
 import com.projet.security.dto.RegisterResponse;
 import com.projet.security.dto.ResendOtpRequest;
 import com.projet.security.dto.VerifyOtpRequest;
 import com.projet.security.dto.VerifyOtpResponse;
 import com.projet.security.service.AuthService;
+import com.projet.user.dto.UserDto;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -40,8 +39,9 @@ public class AuthController {
     }
 
     @PostMapping("/complete-registration")
-    public AuthResponse completeRegistration(@Valid @RequestBody CompleteRegistrationRequest request) {
-        return authService.completeRegistration(request);
+    public UserDto completeRegistration(@Valid @RequestBody CompleteRegistrationRequest request,
+                                         HttpServletResponse response) {
+        return authService.completeRegistration(request, response);
     }
 
     @PostMapping("/resend-otp")
@@ -51,18 +51,18 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    public UserDto login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        return authService.login(request, response);
     }
 
     @PostMapping("/refresh")
-    public AuthResponse refresh(@Valid @RequestBody RefreshRequest request) {
-        return authService.refresh(request.refreshToken());
+    public UserDto refresh(HttpServletRequest request, HttpServletResponse response) {
+        return authService.refresh(request, response);
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
-        authService.logout(authorizationHeader.replaceFirst("(?i)^Bearer ", ""));
-        return ResponseEntity.noContent().build();
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
     }
 }

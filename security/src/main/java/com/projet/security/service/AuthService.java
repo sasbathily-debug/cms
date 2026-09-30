@@ -2,7 +2,6 @@ package com.projet.security.service;
 
 import com.projet.integration.notification.OtpChannel;
 import com.projet.security.config.OtpProperties;
-import com.projet.security.dto.AuthResponse;
 import com.projet.security.dto.CompleteRegistrationRequest;
 import com.projet.security.dto.LoginRequest;
 import com.projet.security.dto.RegisterRequest;
@@ -19,6 +18,9 @@ import com.projet.user.exception.EmailAlreadyExistsException;
 import com.projet.user.exception.UserNotFoundException;
 import com.projet.user.service.UserService;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,6 +45,7 @@ public class AuthService {
     private final OtpProperties otpProperties;
     private final OtpChannel otpChannel;
     private final PendingRegistrationService pendingRegistrationService;
+    private final AuthCookieService authCookieService;
 
     public RegisterResponse register(RegisterRequest request) {
         userService.findAuthViewByEmail(request.email()).ifPresent(existing -> {
@@ -67,7 +70,7 @@ public class AuthService {
         return new VerifyOtpResponse("Email vérifié. Choisissez votre mot de passe.");
     }
 
-    public AuthResponse completeRegistration(CompleteRegistrationRequest request) {
+    public UserDto completeRegistration(CompleteRegistrationRequest request, HttpServletResponse response) {
         if (!pendingRegistrationService.isVerified(request.email())) {
             throw new InvalidOtpException("Vérifiez d'abord votre email avant de choisir un mot de passe.");
         }
@@ -85,7 +88,7 @@ public class AuthService {
         ));
 
         pendingRegistrationService.clear(request.email());
-        return issueTokens(user.id(), user.email(), user.role().name());
+        return issueTokensAndGetUser(user.id(), user.email(), user.role().name(), response);
     }
 
     public void resendOtp(String email) {
@@ -95,17 +98,22 @@ public class AuthService {
         sendOtp(email, pending.phone(), pending.firstName());
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public UserDto login(LoginRequest request, HttpServletResponse response) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.identifier(), request.password()));
 
         UserAuthView user = userService.findAuthViewByIdentifier(request.identifier())
                 .orElseThrow(() -> new InvalidTokenException("Identifiants invalides"));
 
-        return issueTokens(user.id(), user.email(), user.role().name());
+        return issueTokensAndGetUser(user.id(), user.email(), user.role().name(), response);
     }
 
-    public AuthResponse refresh(String refreshToken) {
+    public UserDto refresh(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = authCookieService.readCookie(request, AuthCookieService.REFRESH_COOKIE);
+        if (refreshToken == null) {
+            throw new InvalidTokenException("Refresh token manquant");
+        }
+
         Claims claims = jwtService.parseAndValidate(refreshToken);
         UUID userId = UUID.fromString(claims.getSubject());
 
@@ -116,14 +124,24 @@ public class AuthService {
 
         var user = userService.getById(userId);
         refreshTokenService.revoke(userId);
-        return issueTokens(user.id(), user.email(), user.role().name());
+        return issueTokensAndGetUser(user.id(), user.email(), user.role().name(), response);
     }
 
-    public void logout(String accessToken) {
-        Claims claims = jwtService.parseAndValidate(accessToken);
-        Duration ttl = Duration.between(Instant.now(), claims.getExpiration().toInstant());
-        tokenBlacklistService.blacklist(claims.getId(), ttl);
-        refreshTokenService.revoke(UUID.fromString(claims.getSubject()));
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String accessToken = authCookieService.readCookie(request, AuthCookieService.ACCESS_COOKIE);
+        if (accessToken != null) {
+            try {
+                Claims claims = jwtService.parseAndValidate(accessToken);
+                Duration ttl = Duration.between(Instant.now(), claims.getExpiration().toInstant());
+                if (!ttl.isNegative()) {
+                    tokenBlacklistService.blacklist(claims.getId(), ttl);
+                }
+                refreshTokenService.revoke(UUID.fromString(claims.getSubject()));
+            } catch (JwtException ignored) {
+                // token already invalid/expired : rien à révoquer côté serveur
+            }
+        }
+        authCookieService.clearCookies(response);
     }
 
     private void sendOtp(String email, String phone, String firstName) {
@@ -131,10 +149,14 @@ public class AuthService {
         otpChannel.sendOtp(email, phone, firstName, code, (int) otpProperties.ttlMinutes());
     }
 
-    private AuthResponse issueTokens(UUID userId, String email, String role) {
+    private UserDto issueTokensAndGetUser(UUID userId, String email, String role, HttpServletResponse response) {
         var access = jwtService.generateAccessToken(userId, email, role);
         var refresh = jwtService.generateRefreshToken(userId);
         refreshTokenService.store(userId, refresh.jti(), Duration.between(Instant.now(), refresh.expiresAt()));
-        return new AuthResponse(access.token(), refresh.token(), access.expiresAt().getEpochSecond());
+
+        authCookieService.setAccessCookie(response, access.token(), Duration.between(Instant.now(), access.expiresAt()));
+        authCookieService.setRefreshCookie(response, refresh.token(), Duration.between(Instant.now(), refresh.expiresAt()));
+
+        return userService.getById(userId);
     }
 }

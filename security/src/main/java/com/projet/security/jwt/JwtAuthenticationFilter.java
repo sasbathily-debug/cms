@@ -1,5 +1,6 @@
 package com.projet.security.jwt;
 
+import com.projet.security.service.AuthCookieService;
 import com.projet.security.service.TokenBlacklistService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -22,18 +23,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final AuthCookieService authCookieService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                      @NonNull HttpServletResponse response,
                                      @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith(BEARER_PREFIX)) {
-            String token = header.substring(BEARER_PREFIX.length());
+        String token = authCookieService.readCookie(request, AuthCookieService.ACCESS_COOKIE);
+        if (token != null) {
             try {
                 Claims claims = jwtService.parseAndValidate(token);
                 if (!tokenBlacklistService.isBlacklisted(claims.getId())) {

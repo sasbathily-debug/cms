@@ -39,6 +39,9 @@ security:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:4200}
+  cookie:
+    secure: ${COOKIE_SECURE:true}
+    same-site: ${COOKIE_SAME_SITE:None}
   otp:
     channel: ${OTP_CHANNEL:email}
   whatsapp:
