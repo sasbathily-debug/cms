@@ -57,10 +57,23 @@ public class SecurityConfig {
                 // always answers true opts this fully stateless app out of that session-fixation
                 // machinery, which protects session-based apps and has no purpose here.
                 .securityContext(context -> context.securityContextRepository(new NoOpSecurityContextRepository()))
+                .addFilterBefore((jakarta.servlet.Filter) (req, resp, chain) -> {
+                    var httpReq = (jakarta.servlet.http.HttpServletRequest) req;
+                    var httpResp = (jakarta.servlet.http.HttpServletResponse) resp;
+                    var authRightBeforeAuthz = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                    httpResp.setHeader("X-Debug-PreAuthz-DispatcherType", httpReq.getDispatcherType().toString());
+                    httpResp.setHeader("X-Debug-PreAuthz-HasAuth", String.valueOf(authRightBeforeAuthz != null));
+                    if (authRightBeforeAuthz != null) {
+                        httpResp.setHeader("X-Debug-PreAuthz-IsAuthenticated", String.valueOf(authRightBeforeAuthz.isAuthenticated()));
+                        httpResp.setHeader("X-Debug-PreAuthz-AuthClass", authRightBeforeAuthz.getClass().getSimpleName());
+                    }
+                    chain.doFilter(req, resp);
+                }, org.springframework.security.web.access.intercept.AuthorizationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
                             var ctxAuth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
                             response.setHeader("X-Debug-Path", request.getRequestURI());
+                            response.setHeader("X-Debug-DispatcherType", request.getDispatcherType().toString());
                             response.setHeader("X-Debug-Method", request.getMethod());
                             response.setHeader("X-Debug-HasAuth", String.valueOf(ctxAuth != null));
                             if (ctxAuth != null) {
