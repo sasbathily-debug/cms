@@ -91,6 +91,17 @@ public class SecurityConfig {
                             }
                             response.setHeader("X-Debug-ExceptionType", authException.getClass().getSimpleName());
                             response.setHeader("X-Debug-ExceptionMsg", String.valueOf(authException.getMessage()));
+                            Object origStatus = request.getAttribute("jakarta.servlet.error.status_code");
+                            Object origMsg = request.getAttribute("jakarta.servlet.error.message");
+                            Object origExType = request.getAttribute("jakarta.servlet.error.exception_type");
+                            Object origEx = request.getAttribute("jakarta.servlet.error.exception");
+                            response.setHeader("X-Debug-OrigStatus", String.valueOf(origStatus));
+                            response.setHeader("X-Debug-OrigMsg", String.valueOf(origMsg));
+                            response.setHeader("X-Debug-OrigExType", String.valueOf(origExType));
+                            if (origEx != null) {
+                                response.setHeader("X-Debug-OrigExClass", origEx.getClass().getName());
+                                response.setHeader("X-Debug-OrigExMsg", String.valueOf(((Throwable) origEx).getMessage()));
+                            }
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
                         }))
                 .authorizeHttpRequests(auth -> auth
