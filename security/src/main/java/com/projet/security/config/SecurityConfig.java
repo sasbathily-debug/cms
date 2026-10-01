@@ -58,8 +58,28 @@ public class SecurityConfig {
                 // machinery, which protects session-based apps and has no purpose here.
                 .securityContext(context -> context.securityContextRepository(new NoOpSecurityContextRepository()))
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            var ctxAuth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                            response.setHeader("X-Debug-Path", request.getRequestURI());
+                            response.setHeader("X-Debug-Method", request.getMethod());
+                            response.setHeader("X-Debug-HasAuth", String.valueOf(ctxAuth != null));
+                            if (ctxAuth != null) {
+                                response.setHeader("X-Debug-Authorities", ctxAuth.getAuthorities().toString());
+                                response.setHeader("X-Debug-Authenticated", String.valueOf(ctxAuth.isAuthenticated()));
+                            }
+                            response.setHeader("X-Debug-HasCookieHeader", String.valueOf(request.getHeader("Cookie") != null));
+                            var cookies = request.getCookies();
+                            if (cookies != null) {
+                                StringBuilder names = new StringBuilder();
+                                for (var c : cookies) {
+                                    names.append(c.getName()).append(",");
+                                }
+                                response.setHeader("X-Debug-CookieNames", names.toString());
+                            }
+                            response.setHeader("X-Debug-ExceptionType", authException.getClass().getSimpleName());
+                            response.setHeader("X-Debug-ExceptionMsg", String.valueOf(authException.getMessage()));
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                        }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/users/me", "/users/me/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/users", "/users/*").hasRole("ADMIN")
