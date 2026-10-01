@@ -6,6 +6,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 public final class AppointmentSpecifications {
 
@@ -35,6 +36,25 @@ public final class AppointmentSpecifications {
         };
     }
 
+    public static Specification<Appointment> isPastDue() {
+        return (root, query, cb) -> {
+            LocalDate today = LocalDate.now();
+            LocalTime now = LocalTime.now();
+            return cb.and(
+                    cb.equal(root.get("status"), AppointmentStatus.CONFIRMED),
+                    cb.isNotNull(root.get("preferredDate")),
+                    cb.isNotNull(root.get("preferredTime")),
+                    cb.or(
+                            cb.lessThan(root.get("preferredDate"), today),
+                            cb.and(
+                                    cb.equal(root.get("preferredDate"), today),
+                                    cb.lessThan(root.get("preferredTime"), now)
+                            )
+                    )
+            );
+        };
+    }
+
     public static Specification<Appointment> matchesSearch(String search) {
         return (root, query, cb) -> {
             if (!StringUtils.hasText(search)) {
@@ -50,9 +70,9 @@ public final class AppointmentSpecifications {
         };
     }
 
-    public static Specification<Appointment> filter(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search) {
+    public static Specification<Appointment> filter(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue) {
         return Specification.allOf(
-                hasStatus(status),
+                pastDue ? isPastDue() : hasStatus(status),
                 date != null ? onDate(date) : dateBetween(from, to),
                 matchesSearch(search)
         );

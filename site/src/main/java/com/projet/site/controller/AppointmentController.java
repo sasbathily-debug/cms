@@ -58,8 +58,9 @@ public class AppointmentController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "false") boolean pastDue,
             Pageable pageable) {
-        return appointmentService.findAll(status, date, from, to, search, pageable);
+        return appointmentService.findAll(status, date, from, to, search, pastDue, pageable);
     }
 
     @GetMapping("/counts")
@@ -82,8 +83,9 @@ public class AppointmentController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-            @RequestParam(required = false) String search) {
-        byte[] csv = appointmentService.exportCsv(status, date, from, to, search);
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "false") boolean pastDue) {
+        byte[] csv = appointmentService.exportCsv(status, date, from, to, search, pastDue);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"rendez-vous.csv\"")
                 .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))

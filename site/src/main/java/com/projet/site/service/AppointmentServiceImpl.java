@@ -99,8 +99,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, Pageable pageable) {
-        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search);
+    public Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue, Pageable pageable) {
+        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search, pastDue);
         return appointmentRepository.findAll(spec, pageable).map(appointmentMapper::toDto);
     }
 
@@ -113,12 +113,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public AppointmentCountsDto counts(LocalDate date, LocalDate from, LocalDate to, String search) {
-        long all = appointmentRepository.count(AppointmentSpecifications.filter(null, date, from, to, search));
-        long confirmed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, date, from, to, search));
-        long cancelled = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CANCELLED, date, from, to, search));
-        long completed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.COMPLETED, date, from, to, search));
-        long noShow = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.NO_SHOW, date, from, to, search));
-        return new AppointmentCountsDto(all, confirmed, cancelled, completed, noShow);
+        long all = appointmentRepository.count(AppointmentSpecifications.filter(null, date, from, to, search, false));
+        long confirmed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, date, from, to, search, false));
+        long cancelled = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CANCELLED, date, from, to, search, false));
+        long completed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.COMPLETED, date, from, to, search, false));
+        long noShow = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.NO_SHOW, date, from, to, search, false));
+        long pastDue = appointmentRepository.count(AppointmentSpecifications.filter(null, date, from, to, search, true));
+        return new AppointmentCountsDto(all, confirmed, cancelled, completed, noShow, pastDue);
     }
 
     @Override
@@ -129,16 +130,16 @@ public class AppointmentServiceImpl implements AppointmentService {
         LocalDate weekEnd = today.with(DayOfWeek.SUNDAY);
 
         long todayCount = appointmentRepository.count(
-                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, today, null, null, null));
+                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, today, null, null, null, false));
         long weekCount = appointmentRepository.count(
-                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, null, weekStart, weekEnd, null));
+                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, null, weekStart, weekEnd, null, false));
         return new AppointmentStatsDto(todayCount, weekCount);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search) {
-        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search);
+    public byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue) {
+        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search, pastDue);
         List<Appointment> appointments = appointmentRepository.findAll(spec);
 
         ByteArrayOutputStream out = new ByteArrayOutputStream();

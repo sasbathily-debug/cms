@@ -5,6 +5,7 @@ public record AppointmentCountsDto(
         long confirmed,
         long cancelled,
         long completed,
-        long noShow
+        long noShow,
+        long pastDue
 ) {
 }

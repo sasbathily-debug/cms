@@ -17,7 +17,7 @@ public interface AppointmentService {
 
     AppointmentDto create(AppointmentRequest request, UUID userId);
 
-    Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, Pageable pageable);
+    Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue, Pageable pageable);
 
     Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable);
 
@@ -31,5 +31,5 @@ public interface AppointmentService {
 
     AppointmentStatsDto stats();
 
-    byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search);
+    byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue);
 }
