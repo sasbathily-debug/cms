@@ -11,24 +11,31 @@ import com.projet.user.service.UserService;
 import com.projet.site.domain.Appointment;
 import com.projet.site.domain.AppointmentStatus;
 import com.projet.site.domain.AppointmentStatusEvent;
+import com.projet.site.dto.AppointmentCountsDto;
 import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
+import com.projet.site.dto.AppointmentStatsDto;
 import com.projet.site.dto.AppointmentStatusEventDto;
 import com.projet.site.exception.ResourceNotFoundException;
 import com.projet.site.exception.SlotAlreadyBookedException;
 import com.projet.site.mapper.AppointmentMapper;
 import com.projet.site.mapper.AppointmentStatusEventMapper;
 import com.projet.site.repository.AppointmentRepository;
+import com.projet.site.repository.AppointmentSpecifications;
 import com.projet.site.repository.AppointmentStatusEventRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -92,17 +99,85 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<AppointmentDto> findAll(AppointmentStatus status, Pageable pageable) {
-        Page<Appointment> page = status == null
-                ? appointmentRepository.findAll(pageable)
-                : appointmentRepository.findByStatus(status, pageable);
-        return page.map(appointmentMapper::toDto);
+    public Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, Pageable pageable) {
+        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search);
+        return appointmentRepository.findAll(spec, pageable).map(appointmentMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable) {
         return appointmentRepository.findByUserId(userId, pageable).map(appointmentMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AppointmentCountsDto counts(LocalDate date, LocalDate from, LocalDate to, String search) {
+        long all = appointmentRepository.count(AppointmentSpecifications.filter(null, date, from, to, search));
+        long confirmed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, date, from, to, search));
+        long cancelled = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.CANCELLED, date, from, to, search));
+        long completed = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.COMPLETED, date, from, to, search));
+        long noShow = appointmentRepository.count(AppointmentSpecifications.filter(AppointmentStatus.NO_SHOW, date, from, to, search));
+        return new AppointmentCountsDto(all, confirmed, cancelled, completed, noShow);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AppointmentStatsDto stats() {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = today.with(DayOfWeek.SUNDAY);
+
+        long todayCount = appointmentRepository.count(
+                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, today, null, null, null));
+        long weekCount = appointmentRepository.count(
+                AppointmentSpecifications.filter(AppointmentStatus.CONFIRMED, null, weekStart, weekEnd, null));
+        return new AppointmentStatsDto(todayCount, weekCount);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search) {
+        Specification<Appointment> spec = AppointmentSpecifications.filter(status, date, from, to, search);
+        List<Appointment> appointments = appointmentRepository.findAll(spec);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.writeBytes(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF}); // UTF-8 BOM for Excel
+        StringBuilder csv = new StringBuilder();
+        csv.append("Nom,Téléphone,Email,Motif,Date souhaitée,Heure,Statut,Message,Créé le\n");
+        for (Appointment a : appointments) {
+            csv.append(csvField(a.getFullName())).append(',')
+                    .append(csvField(a.getPhone())).append(',')
+                    .append(csvField(a.getEmail())).append(',')
+                    .append(csvField(a.getReason())).append(',')
+                    .append(csvField(a.getPreferredDate() != null ? a.getPreferredDate().toString() : "")).append(',')
+                    .append(csvField(a.getPreferredTime() != null ? a.getPreferredTime().toString() : "")).append(',')
+                    .append(csvField(statusLabel(a.getStatus()))).append(',')
+                    .append(csvField(a.getMessage())).append(',')
+                    .append(csvField(a.getCreatedAt() != null ? a.getCreatedAt().toString() : ""))
+                    .append('\n');
+        }
+        out.writeBytes(csv.toString().getBytes(StandardCharsets.UTF_8));
+        return out.toByteArray();
+    }
+
+    private static String statusLabel(AppointmentStatus status) {
+        return switch (status) {
+            case CONFIRMED -> "Confirmé";
+            case CANCELLED -> "Annulé";
+            case COMPLETED -> "Terminé";
+            case NO_SHOW -> "Absent";
+        };
+    }
+
+    private static String csvField(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     @Override

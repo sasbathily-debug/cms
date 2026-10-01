@@ -1,12 +1,15 @@
 package com.projet.site.service;
 
 import com.projet.site.domain.AppointmentStatus;
+import com.projet.site.dto.AppointmentCountsDto;
 import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
+import com.projet.site.dto.AppointmentStatsDto;
 import com.projet.site.dto.AppointmentStatusEventDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,7 +17,7 @@ public interface AppointmentService {
 
     AppointmentDto create(AppointmentRequest request, UUID userId);
 
-    Page<AppointmentDto> findAll(AppointmentStatus status, Pageable pageable);
+    Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, Pageable pageable);
 
     Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable);
 
@@ -23,4 +26,10 @@ public interface AppointmentService {
     List<AppointmentStatusEventDto> findHistory(UUID appointmentId, UUID requesterId, boolean isAdmin);
 
     void sendDueReminders();
+
+    AppointmentCountsDto counts(LocalDate date, LocalDate from, LocalDate to, String search);
+
+    AppointmentStatsDto stats();
+
+    byte[] exportCsv(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search);
 }

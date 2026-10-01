@@ -1,8 +1,10 @@
 package com.projet.site.controller;
 
 import com.projet.site.domain.AppointmentStatus;
+import com.projet.site.dto.AppointmentCountsDto;
 import com.projet.site.dto.AppointmentDto;
 import com.projet.site.dto.AppointmentRequest;
+import com.projet.site.dto.AppointmentStatsDto;
 import com.projet.site.dto.AppointmentStatusEventDto;
 import com.projet.site.dto.UpdateAppointmentStatusRequest;
 import com.projet.site.service.AppointmentService;
@@ -10,7 +12,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,8 +52,42 @@ public class AppointmentController {
     }
 
     @GetMapping
-    public Page<AppointmentDto> findAll(@RequestParam(required = false) AppointmentStatus status, Pageable pageable) {
-        return appointmentService.findAll(status, pageable);
+    public Page<AppointmentDto> findAll(
+            @RequestParam(required = false) AppointmentStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
+        return appointmentService.findAll(status, date, from, to, search, pageable);
+    }
+
+    @GetMapping("/counts")
+    public AppointmentCountsDto counts(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String search) {
+        return appointmentService.counts(date, from, to, search);
+    }
+
+    @GetMapping("/stats")
+    public AppointmentStatsDto stats() {
+        return appointmentService.stats();
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(required = false) AppointmentStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String search) {
+        byte[] csv = appointmentService.exportCsv(status, date, from, to, search);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"rendez-vous.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(csv);
     }
 
     @PatchMapping("/{id}/status")

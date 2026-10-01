@@ -66,7 +66,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/actuator/health/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/v3/api-docs.yaml").permitAll()
                         .requestMatchers(HttpMethod.POST, "/appointments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/site/services", "/site/faq", "/site/settings", "/site/health-tips", "/site/availability", "/site/hero-images").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/appointments").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/appointments", "/appointments/counts", "/appointments/stats", "/appointments/export").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/appointments/*/status").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.POST, "/site/services", "/site/faq", "/site/health-tips", "/site/hero-images").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/site/services/*", "/site/faq/*", "/site/settings", "/site/health-tips/*", "/site/hero-images/*").hasRole("ADMIN")
