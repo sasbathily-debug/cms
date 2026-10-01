@@ -31,17 +31,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                      @NonNull HttpServletResponse response,
                                      @NonNull FilterChain filterChain) throws ServletException, IOException {
+        response.setHeader("X-Debug-Filter-URI", request.getRequestURI());
         String token = authCookieService.readCookie(request, AuthCookieService.ACCESS_COOKIE);
+        response.setHeader("X-Debug-Filter-TokenPresent", String.valueOf(token != null));
         if (token != null) {
             try {
                 Claims claims = jwtService.parseAndValidate(token);
-                if (!tokenBlacklistService.isBlacklisted(claims.getId())) {
+                response.setHeader("X-Debug-Filter-ParseOk", "true");
+                response.setHeader("X-Debug-Filter-Jti", String.valueOf(claims.getId()));
+                boolean blacklisted = tokenBlacklistService.isBlacklisted(claims.getId());
+                response.setHeader("X-Debug-Filter-Blacklisted", String.valueOf(blacklisted));
+                if (!blacklisted) {
                     String role = claims.get("role", String.class);
                     var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
                     var authentication = new UsernamePasswordAuthenticationToken(claims.getSubject(), null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+                    response.setHeader("X-Debug-Filter-SetAuth", "true");
                 }
-            } catch (JwtException ignored) {
+            } catch (JwtException e) {
+                response.setHeader("X-Debug-Filter-ParseOk", "false");
+                response.setHeader("X-Debug-Filter-ParseError", e.getClass().getSimpleName() + ":" + e.getMessage());
                 SecurityContextHolder.clearContext();
             }
         }
