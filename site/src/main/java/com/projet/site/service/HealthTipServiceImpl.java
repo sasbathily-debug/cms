@@ -24,6 +24,14 @@ public class HealthTipServiceImpl implements HealthTipService {
     @Override
     @Transactional(readOnly = true)
     public List<HealthTipDto> findAll() {
+        return healthTipRepository.findAllByPublishedTrueOrderByDisplayOrderAsc().stream()
+                .map(healthTipMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<HealthTipDto> findAllForAdmin() {
         return healthTipRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(healthTipMapper::toDto)
                 .toList();
@@ -32,6 +40,7 @@ public class HealthTipServiceImpl implements HealthTipService {
     @Override
     public HealthTipDto create(HealthTipRequest request) {
         HealthTip healthTip = new HealthTip(request.title(), request.body(), request.icon(), request.displayOrder());
+        apply(healthTip, request);
         return healthTipMapper.toDto(healthTipRepository.save(healthTip));
     }
 
@@ -43,7 +52,19 @@ public class HealthTipServiceImpl implements HealthTipService {
         healthTip.setBody(request.body());
         healthTip.setIcon(request.icon());
         healthTip.setDisplayOrder(request.displayOrder());
+        apply(healthTip, request);
         return healthTipMapper.toDto(healthTipRepository.save(healthTip));
+    }
+
+    private static void apply(HealthTip healthTip, HealthTipRequest request) {
+        healthTip.setCategory(blankToNull(request.category()));
+        healthTip.setReadingMinutes(request.readingMinutes());
+        healthTip.setPhotoUrl(blankToNull(request.photoUrl()));
+        healthTip.setPublished(request.published() == null || request.published());
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     @Override

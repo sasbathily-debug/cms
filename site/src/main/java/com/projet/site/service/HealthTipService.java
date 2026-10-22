@@ -8,7 +8,11 @@ import java.util.UUID;
 
 public interface HealthTipService {
 
+    /** Articles publiés, pour le site public. */
     List<HealthTipDto> findAll();
+
+    /** Tous les articles, brouillons compris, pour l'admin. */
+    List<HealthTipDto> findAllForAdmin();
 
     HealthTipDto create(HealthTipRequest request);
 

@@ -31,6 +31,11 @@ public class HealthTipController {
         return healthTipService.findAll();
     }
 
+    @GetMapping("/all")
+    public List<HealthTipDto> findAllForAdmin() {
+        return healthTipService.findAllForAdmin();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public HealthTipDto create(@Valid @RequestBody HealthTipRequest request) {

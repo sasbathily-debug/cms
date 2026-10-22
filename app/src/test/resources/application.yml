@@ -4,3 +4,10 @@ security:
     issuer: projet-api-test
     access-token-ttl-minutes: 15
     refresh-token-ttl-days: 7
+app:
+  frontend-url: http://localhost:4200
+  cors:
+    allowed-origins: http://localhost:4200
+  cookie:
+    secure: false
+    same-site: Lax

@@ -8,7 +8,11 @@ import java.util.UUID;
 
 public interface FaqItemService {
 
+    /** Questions publiées, pour le site public. */
     List<FaqItemDto> findAll();
+
+    /** Toutes les questions, brouillons compris, pour l'admin. */
+    List<FaqItemDto> findAllForAdmin();
 
     FaqItemDto create(FaqItemRequest request);
 

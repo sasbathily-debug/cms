@@ -35,6 +35,17 @@ public class HealthTip {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    private String category;
+
+    @Column(name = "reading_minutes")
+    private Integer readingMinutes;
+
+    @Column(name = "photo_url")
+    private String photoUrl;
+
+    @Column(nullable = false)
+    private boolean published = true;
+
     public HealthTip(String title, String body, String icon, int displayOrder) {
         this.title = title;
         this.body = body;

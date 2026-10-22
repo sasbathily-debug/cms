@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface HealthTipRepository extends JpaRepository<HealthTip, UUID> {
 
     List<HealthTip> findAllByOrderByDisplayOrderAsc();
+
+    List<HealthTip> findAllByPublishedTrueOrderByDisplayOrderAsc();
 }

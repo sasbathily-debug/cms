@@ -24,6 +24,14 @@ public class FaqItemServiceImpl implements FaqItemService {
     @Override
     @Transactional(readOnly = true)
     public List<FaqItemDto> findAll() {
+        return faqItemRepository.findAllByPublishedTrueOrderByDisplayOrderAsc().stream()
+                .map(faqItemMapper::toDto)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FaqItemDto> findAllForAdmin() {
         return faqItemRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(faqItemMapper::toDto)
                 .toList();
@@ -32,6 +40,7 @@ public class FaqItemServiceImpl implements FaqItemService {
     @Override
     public FaqItemDto create(FaqItemRequest request) {
         FaqItem faqItem = new FaqItem(request.question(), request.answer(), request.displayOrder());
+        apply(faqItem, request);
         return faqItemMapper.toDto(faqItemRepository.save(faqItem));
     }
 
@@ -42,7 +51,14 @@ public class FaqItemServiceImpl implements FaqItemService {
         faqItem.setQuestion(request.question());
         faqItem.setAnswer(request.answer());
         faqItem.setDisplayOrder(request.displayOrder());
+        apply(faqItem, request);
         return faqItemMapper.toDto(faqItemRepository.save(faqItem));
+    }
+
+    private static void apply(FaqItem faqItem, FaqItemRequest request) {
+        String category = request.category();
+        faqItem.setCategory(category == null || category.isBlank() ? null : category.trim());
+        faqItem.setPublished(request.published() == null || request.published());
     }
 
     @Override

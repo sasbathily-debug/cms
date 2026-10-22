@@ -33,6 +33,11 @@ public class FaqItem {
     @Column(name = "display_order", nullable = false)
     private int displayOrder;
 
+    private String category;
+
+    @Column(nullable = false)
+    private boolean published = true;
+
     public FaqItem(String question, String answer, int displayOrder) {
         this.question = question;
         this.answer = answer;

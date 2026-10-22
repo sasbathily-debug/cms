@@ -12,6 +12,8 @@ public record SiteSettingsDto(
         String phone,
         String email,
         String whatsappNumber,
-        String openingHours
+        String openingHours,
+        String landmark,
+        String emergencyNumber
 ) {
 }

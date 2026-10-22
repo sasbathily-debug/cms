@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface FaqItemRepository extends JpaRepository<FaqItem, UUID> {
 
     List<FaqItem> findAllByOrderByDisplayOrderAsc();
+
+    List<FaqItem> findAllByPublishedTrueOrderByDisplayOrderAsc();
 }

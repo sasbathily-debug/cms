@@ -31,6 +31,11 @@ public class FaqItemController {
         return faqItemService.findAll();
     }
 
+    @GetMapping("/all")
+    public List<FaqItemDto> findAllForAdmin() {
+        return faqItemService.findAllForAdmin();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public FaqItemDto create(@Valid @RequestBody FaqItemRequest request) {

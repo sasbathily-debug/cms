@@ -50,4 +50,9 @@ public class SiteSettings {
 
     @Column(name = "opening_hours")
     private String openingHours;
+
+    private String landmark;
+
+    @Column(name = "emergency_number")
+    private String emergencyNumber;
 }
