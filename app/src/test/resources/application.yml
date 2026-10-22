@@ -11,3 +11,9 @@ app:
   cookie:
     secure: false
     same-site: Lax
+spring:
+  jpa:
+    # Comme en production : si une entité ne correspond pas à la base, le démarrage échoue.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
