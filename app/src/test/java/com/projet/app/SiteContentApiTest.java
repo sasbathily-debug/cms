@@ -178,6 +178,54 @@ class SiteContentApiTest {
         assertThat(current).contains("\"addressStreet\"").contains("\"landmark\"").contains("\"emergencyNumber\"");
     }
 
+    @Test
+    void lesPagesSontPubliquesEnLectureEtSeulLAdminLesModifie() throws Exception {
+        HttpClient anonymous = newClient();
+        HttpClient admin = adminClient();
+
+        assertThat(send(anonymous, "GET", "/site/pages/a-propos", null).statusCode()).isEqualTo(404);
+        assertThat(send(anonymous, "GET", "/site/pages", null).statusCode()).isIn(401, 403);
+        assertThat(send(anonymous, "PUT", "/site/pages/a-propos", "{\"content\":{\"titre\":\"x\"}}").statusCode())
+                .isIn(401, 403);
+
+        String content = "{\"content\":{\"titre\":\"Dr Aïssatou Mamadou Fall\",\"parcours\":[{\"periode\":\"2010\"}]}}";
+        HttpResponse<String> saved = send(admin, "PUT", "/site/pages/a-propos", content);
+        assertThat(saved.statusCode()).isEqualTo(200);
+
+        HttpResponse<String> read = send(anonymous, "GET", "/site/pages/a-propos", null);
+        assertThat(read.statusCode()).isEqualTo(200);
+        assertThat(read.body()).contains("\"slug\":\"a-propos\"")
+                .contains("Dr Aïssatou Mamadou Fall")
+                .contains("\"periode\":\"2010\"")
+                .contains("\"updatedAt\"");
+        assertThat(send(admin, "GET", "/site/pages", null).body()).contains("a-propos");
+
+        assertThat(send(anonymous, "DELETE", "/site/pages/a-propos", null).statusCode()).isIn(401, 403);
+        assertThat(send(admin, "DELETE", "/site/pages/a-propos", null).statusCode()).isEqualTo(204);
+        assertThat(send(anonymous, "GET", "/site/pages/a-propos", null).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void uneNouvelleSaisieRemplaceLaPrecedente() throws Exception {
+        HttpClient admin = adminClient();
+        send(admin, "PUT", "/site/pages/le-cabinet", "{\"content\":{\"a\":\"un\",\"b\":\"deux\"}}");
+        send(admin, "PUT", "/site/pages/le-cabinet", "{\"content\":{\"a\":\"trois\"}}");
+
+        String body = send(newClient(), "GET", "/site/pages/le-cabinet", null).body();
+        assertThat(body).contains("trois").doesNotContain("deux");
+    }
+
+    @Test
+    void desPagesInvalidesSontRefusees() throws Exception {
+        HttpClient admin = adminClient();
+
+        assertThat(send(admin, "PUT", "/site/pages/a-propos", "{\"content\":[1,2,3]}").statusCode()).isEqualTo(400);
+        assertThat(send(admin, "PUT", "/site/pages/a-propos", "{\"content\":\"texte\"}").statusCode()).isEqualTo(400);
+        assertThat(send(admin, "PUT", "/site/pages/a-propos", "{}").statusCode()).isEqualTo(400);
+        assertThat(send(admin, "PUT", "/site/pages/Mauvais%20Nom", "{\"content\":{}}").statusCode()).isEqualTo(400);
+        assertThat(send(admin, "PUT", "/site/pages/mauvais_nom", "{\"content\":{}}").statusCode()).isEqualTo(400);
+    }
+
     private static long count(String text, String needle) {
         return List.of(text.split(Pattern.quote(needle), -1)).size() - 1;
     }

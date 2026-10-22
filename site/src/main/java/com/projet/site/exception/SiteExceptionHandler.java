@@ -56,6 +56,15 @@ public class SiteExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(InvalidSitePageException.class)
+    public ResponseEntity<Object> handleInvalidSitePage(InvalidSitePageException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "message", ex.getMessage()
+        ));
+    }
+
     @ExceptionHandler(ContactRateLimitException.class)
     public ResponseEntity<Object> handleContactRateLimit(ContactRateLimitException ex) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
