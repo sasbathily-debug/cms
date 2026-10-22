@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,13 +42,15 @@ public class BrevoEmailSender implements EmailSender {
 
     @Override
     public void send(EmailMessage message) {
-        Map<String, Object> body = Map.of(
-                "sender", Map.of("email", senderEmail, "name", senderName),
-                "to", List.of(Map.of("email", message.to())),
-                "subject", message.subject(),
-                "textContent", message.text(),
-                "htmlContent", message.html()
-        );
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("sender", Map.of("email", senderEmail, "name", senderName));
+        body.put("to", List.of(Map.of("email", message.to())));
+        if (message.replyTo() != null && !message.replyTo().isBlank()) {
+            body.put("replyTo", Map.of("email", message.replyTo()));
+        }
+        body.put("subject", message.subject());
+        body.put("textContent", message.text());
+        body.put("htmlContent", message.html());
 
         restClient.post()
                 .body(body)

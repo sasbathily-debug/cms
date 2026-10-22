@@ -31,6 +31,9 @@ public class SmtpEmailSender implements EmailSender {
                 helper.setFrom(from);
             }
             helper.setTo(message.to());
+            if (StringUtils.hasText(message.replyTo())) {
+                helper.setReplyTo(message.replyTo());
+            }
             helper.setSubject(message.subject());
             helper.setText(message.text(), message.html());
             javaMailSender.send(mimeMessage);

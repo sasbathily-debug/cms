@@ -69,6 +69,25 @@ public final class EmailTemplates {
         return new EmailContent(subject, text, wrap(subject, body, "Reprendre rendez-vous", appUrl));
     }
 
+    public static EmailContent contactMessage(String name, String phone, String email, String motif, String message) {
+        String subject = "Contact du site : " + motif + " (" + name + ")";
+        String text = "Nouveau message depuis le formulaire de contact du site.\n\n"
+                + "Nom : " + name + "\n"
+                + "Téléphone : " + phone + "\n"
+                + "E-mail : " + (email == null || email.isBlank() ? "-" : email) + "\n"
+                + "Motif : " + motif + "\n\n"
+                + message;
+
+        String body = paragraph("Nouveau message depuis le formulaire de contact du site.")
+                + paragraph("<strong>Nom :</strong> " + escape(name) + "<br>"
+                + "<strong>Téléphone :</strong> " + escape(phone) + "<br>"
+                + "<strong>E-mail :</strong> " + escape(email == null || email.isBlank() ? "-" : email) + "<br>"
+                + "<strong>Motif :</strong> " + escape(motif))
+                + paragraph(escape(message).replace("\n", "<br>"));
+
+        return new EmailContent(subject, text, wrap(subject, body, null, null));
+    }
+
     private static String paragraph(String text) {
         return "<p style=\"margin:0 0 16px;font-size:15px;line-height:1.6;color:" + INK_600 + ";\">" + text + "</p>";
     }

@@ -46,4 +46,22 @@ public class SiteExceptionHandler {
                 "message", ex.getMessage()
         ));
     }
+
+    @ExceptionHandler(ContactRateLimitException.class)
+    public ResponseEntity<Object> handleContactRateLimit(ContactRateLimitException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.TOO_MANY_REQUESTS.value(),
+                "message", ex.getMessage()
+        ));
+    }
+
+    @ExceptionHandler(ContactUnavailableException.class)
+    public ResponseEntity<Object> handleContactUnavailable(ContactUnavailableException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", HttpStatus.SERVICE_UNAVAILABLE.value(),
+                "message", ex.getMessage()
+        ));
+    }
 }

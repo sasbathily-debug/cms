@@ -49,6 +49,9 @@ app:
     channel: ${OTP_CHANNEL:email}
   whatsapp:
     enabled: ${WHATSAPP_ENABLED:false}
+  contact:
+    # Adresse de repli si l'e-mail du cabinet n'est pas renseigné dans les paramètres du site
+    to: ${CONTACT_TO:}
   mail:
     provider: ${MAIL_PROVIDER:log}
     from: ${MAIL_FROM:}
