@@ -34,7 +34,7 @@ class ContactServiceTest {
     }
 
     private static SiteSettingsDto settingsWithEmail(String email) {
-        return new SiteSettingsDto("t", null, null, null, null, null, null, null, null, email, null, null, null, null);
+        return new SiteSettingsDto("t", null, null, null, null, null, null, null, null, email, null, null, null, null, null);
     }
 
     private static ContactMessageRequest request(String email, String website) {

@@ -15,6 +15,7 @@ public record UpdateSiteSettingsRequest(
         String email,
         String whatsappNumber,
         String openingHours,
+        String addressStreet,
         String landmark,
         String emergencyNumber
 ) {

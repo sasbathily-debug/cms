@@ -11,6 +11,7 @@ ALTER TABLE health_tips ADD CONSTRAINT health_tips_reading_minutes_range
 ALTER TABLE faq_items ADD COLUMN category VARCHAR(60);
 ALTER TABLE faq_items ADD COLUMN published BOOLEAN NOT NULL DEFAULT TRUE;
 
+ALTER TABLE site_settings ADD COLUMN address_street VARCHAR(255);
 ALTER TABLE site_settings ADD COLUMN landmark VARCHAR(255);
 ALTER TABLE site_settings ADD COLUMN emergency_number VARCHAR(40);
 

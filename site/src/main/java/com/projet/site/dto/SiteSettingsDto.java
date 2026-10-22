@@ -13,6 +13,7 @@ public record SiteSettingsDto(
         String email,
         String whatsappNumber,
         String openingHours,
+        String addressStreet,
         String landmark,
         String emergencyNumber
 ) {

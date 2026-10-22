@@ -175,7 +175,7 @@ class SiteContentApiTest {
     void lesReglagesPortentLeRepereEtLeNumeroDUrgence() throws Exception {
         HttpClient admin = adminClient();
         String current = send(admin, "GET", "/site/settings", null).body();
-        assertThat(current).contains("\"landmark\"").contains("\"emergencyNumber\"");
+        assertThat(current).contains("\"addressStreet\"").contains("\"landmark\"").contains("\"emergencyNumber\"");
     }
 
     private static long count(String text, String needle) {
