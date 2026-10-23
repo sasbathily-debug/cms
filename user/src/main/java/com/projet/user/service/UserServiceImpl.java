@@ -119,4 +119,12 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
     }
+
+    @Override
+    public void resetPassword(UUID id, String newPasswordHash) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        user.setPasswordHash(newPasswordHash);
+        userRepository.save(user);
+    }
 }
