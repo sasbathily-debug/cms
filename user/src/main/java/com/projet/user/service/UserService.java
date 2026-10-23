@@ -30,4 +30,7 @@ public interface UserService {
     UserDto updateProfile(UUID id, UpdateProfileRequest request);
 
     void changePassword(UUID id, ChangePasswordRequest request);
+
+    /** Remplace le mot de passe sans demander l'ancien : réservé à la réinitialisation par code reçu par e-mail. */
+    void resetPassword(UUID id, String newPasswordHash);
 }

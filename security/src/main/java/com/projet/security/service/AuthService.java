@@ -1,9 +1,11 @@
 package com.projet.security.service;
 
 import com.projet.integration.notification.OtpChannel;
+import com.projet.integration.notification.PasswordResetMailer;
 import com.projet.security.config.OtpProperties;
 import com.projet.security.dto.CompleteRegistrationRequest;
 import com.projet.security.dto.LoginRequest;
+import com.projet.security.dto.ResetPasswordRequest;
 import com.projet.security.dto.RegisterRequest;
 import com.projet.security.dto.RegisterResponse;
 import com.projet.security.dto.VerifyOtpResponse;
@@ -22,6 +24,7 @@ import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +34,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -46,6 +50,7 @@ public class AuthService {
     private final OtpChannel otpChannel;
     private final PendingRegistrationService pendingRegistrationService;
     private final AuthCookieService authCookieService;
+    private final PasswordResetMailer passwordResetMailer;
 
     public RegisterResponse register(RegisterRequest request) {
         userService.findAuthViewByEmail(request.email()).ifPresent(existing -> {
@@ -96,6 +101,35 @@ public class AuthService {
                 .orElseThrow(() -> new UserNotFoundException(email));
 
         sendOtp(email, pending.phone(), pending.firstName());
+    }
+
+    /**
+     * Répond de la même façon que le compte existe ou non (et même délai de réémission) : on ne révèle jamais
+     * quelles adresses ont un compte. Seul un compte vérifié reçoit réellement le code.
+     */
+    public void forgotPassword(String email) {
+        String code = otpService.generateForPasswordReset(email);
+        userService.findAuthViewByEmail(email).filter(UserAuthView::enabled).ifPresent(user -> {
+            try {
+                passwordResetMailer.send(user.email(), user.firstName(), code, (int) otpProperties.ttlMinutes());
+            } catch (RuntimeException e) {
+                // Une erreur d'envoi ne doit pas se voir côté visiteur : elle trahirait que le compte existe.
+                log.error("Envoi du code de réinitialisation impossible", e);
+            }
+        });
+    }
+
+    public void resetPassword(ResetPasswordRequest request) {
+        if (!otpService.verifyForPasswordReset(request.email(), request.otp())) {
+            throw new InvalidOtpException("Code invalide ou expiré");
+        }
+        UserAuthView user = userService.findAuthViewByEmail(request.email())
+                .filter(UserAuthView::enabled)
+                .orElseThrow(() -> new InvalidOtpException("Code invalide ou expiré"));
+
+        userService.resetPassword(user.id(), passwordEncoder.encode(request.password()));
+        // Les sessions ouvertes avec l'ancien mot de passe ne doivent plus se renouveler.
+        refreshTokenService.revoke(user.id());
     }
 
     public UserDto login(LoginRequest request, HttpServletResponse response) {

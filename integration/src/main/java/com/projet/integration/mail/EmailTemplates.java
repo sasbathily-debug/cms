@@ -30,6 +30,21 @@ public final class EmailTemplates {
         return new EmailContent(subject, text, wrap(subject, body, null, null));
     }
 
+    public static EmailContent passwordReset(String firstName, String code, int ttlMinutes) {
+        String subject = "Réinitialisation de votre mot de passe";
+        String text = "Bonjour " + firstName + ",\n\nVotre code pour choisir un nouveau mot de passe est : " + code
+                + " (valide " + ttlMinutes + " minutes).\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez ce message : "
+                + "votre mot de passe actuel reste inchangé.\n\nCabinet du Dr Aissatou Mamadou Fall";
+
+        String body = paragraph("Bonjour " + escape(firstName) + ",")
+                + paragraph("Voici votre code pour choisir un nouveau mot de passe :")
+                + codeBox(code)
+                + paragraph("Ce code est valable " + ttlMinutes + " minutes.")
+                + paragraph("Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe actuel reste inchangé.");
+
+        return new EmailContent(subject, text, wrap(subject, body, null, null));
+    }
+
     public static EmailContent appointmentConfirmed(String fullName, String dateInfo, String appUrl) {
         String subject = "Votre rendez-vous est confirmé";
         String text = "Bonjour " + fullName + ",\n\nVotre rendez-vous a été confirmé" + dateInfo

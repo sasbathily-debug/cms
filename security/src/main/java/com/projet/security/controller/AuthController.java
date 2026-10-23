@@ -1,10 +1,12 @@
 package com.projet.security.controller;
 
 import com.projet.security.dto.CompleteRegistrationRequest;
+import com.projet.security.dto.ForgotPasswordRequest;
 import com.projet.security.dto.LoginRequest;
 import com.projet.security.dto.RegisterRequest;
 import com.projet.security.dto.RegisterResponse;
 import com.projet.security.dto.ResendOtpRequest;
+import com.projet.security.dto.ResetPasswordRequest;
 import com.projet.security.dto.VerifyOtpRequest;
 import com.projet.security.dto.VerifyOtpResponse;
 import com.projet.security.service.AuthService;
@@ -48,6 +50,18 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resendOtp(@Valid @RequestBody ResendOtpRequest request) {
         authService.resendOtp(request.email());
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
     }
 
     @PostMapping("/login")

@@ -13,8 +13,13 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class OtpService {
 
-    private static final String KEY_PREFIX = "otp:";
-    private static final String COOLDOWN_PREFIX = "otp-cooldown:";
+    /** Codes de l'inscription : clés historiques, inchangées. */
+    private static final String REGISTRATION = "";
+    /** Codes de la réinitialisation du mot de passe : clés séparées, un code d'inscription n'ouvre pas une réinitialisation. */
+    private static final String RESET = "reset:";
+    /** Au-delà, le code est détruit : 6 chiffres ne doivent pas pouvoir être devinés par essais successifs. */
+    private static final int MAX_ATTEMPTS = 5;
+
     private final SecureRandom random = new SecureRandom();
 
     private final RedisTemplate<String, String> redisTemplate;
@@ -25,23 +30,62 @@ public class OtpService {
      * atomique : evite qu'un appel concurrent passe entre les deux.
      */
     public String generate(String email) {
+        return generate(REGISTRATION, email);
+    }
+
+    public boolean verify(String email, String code) {
+        return verify(REGISTRATION, email, code);
+    }
+
+    public String generateForPasswordReset(String email) {
+        return generate(RESET, email);
+    }
+
+    public boolean verifyForPasswordReset(String email, String code) {
+        return verify(RESET, email, code);
+    }
+
+    private String generate(String purpose, String email) {
         Duration cooldown = Duration.ofSeconds(otpProperties.resendCooldownSeconds());
-        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(COOLDOWN_PREFIX + email, "1", cooldown);
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(cooldownKey(purpose, email), "1", cooldown);
         if (Boolean.FALSE.equals(acquired)) {
             throw new OtpRateLimitException("Veuillez patienter avant de redemander un code.");
         }
 
         String code = String.format("%06d", random.nextInt(1_000_000));
-        redisTemplate.opsForValue().set(KEY_PREFIX + email, code, Duration.ofMinutes(otpProperties.ttlMinutes()));
+        redisTemplate.opsForValue().set(codeKey(purpose, email), code, Duration.ofMinutes(otpProperties.ttlMinutes()));
+        redisTemplate.delete(attemptsKey(purpose, email));
         return code;
     }
 
-    public boolean verify(String email, String code) {
-        String stored = redisTemplate.opsForValue().get(KEY_PREFIX + email);
-        boolean valid = stored != null && stored.equals(code);
-        if (valid) {
-            redisTemplate.delete(KEY_PREFIX + email);
+    private boolean verify(String purpose, String email, String code) {
+        String stored = redisTemplate.opsForValue().get(codeKey(purpose, email));
+        if (stored == null) {
+            return false;
         }
-        return valid;
+        if (stored.equals(code)) {
+            redisTemplate.delete(codeKey(purpose, email));
+            redisTemplate.delete(attemptsKey(purpose, email));
+            return true;
+        }
+        Long attempts = redisTemplate.opsForValue().increment(attemptsKey(purpose, email));
+        redisTemplate.expire(attemptsKey(purpose, email), Duration.ofMinutes(otpProperties.ttlMinutes()));
+        if (attempts != null && attempts >= MAX_ATTEMPTS) {
+            redisTemplate.delete(codeKey(purpose, email));
+            redisTemplate.delete(attemptsKey(purpose, email));
+        }
+        return false;
+    }
+
+    private static String codeKey(String purpose, String email) {
+        return "otp:" + purpose + email;
+    }
+
+    private static String cooldownKey(String purpose, String email) {
+        return "otp-cooldown:" + purpose + email;
+    }
+
+    private static String attemptsKey(String purpose, String email) {
+        return "otp-attempts:" + purpose + email;
     }
 }
