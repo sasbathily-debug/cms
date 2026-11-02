@@ -17,6 +17,8 @@ public class OtpService {
     private static final String REGISTRATION = "";
     /** Codes de la réinitialisation du mot de passe : clés séparées, un code d'inscription n'ouvre pas une réinitialisation. */
     private static final String RESET = "reset:";
+    /** Codes de la prise de rendez-vous sans compte : un code de rendez-vous n'ouvre ni une inscription ni une réinitialisation. */
+    private static final String BOOKING = "booking:";
     /** Au-delà, le code est détruit : 6 chiffres ne doivent pas pouvoir être devinés par essais successifs. */
     private static final int MAX_ATTEMPTS = 5;
 
@@ -43,6 +45,14 @@ public class OtpService {
 
     public boolean verifyForPasswordReset(String email, String code) {
         return verify(RESET, email, code);
+    }
+
+    public String generateForBooking(String email) {
+        return generate(BOOKING, email);
+    }
+
+    public boolean verifyForBooking(String email, String code) {
+        return verify(BOOKING, email, code);
     }
 
     private String generate(String purpose, String email) {

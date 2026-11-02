@@ -59,6 +59,10 @@ public class Appointment {
     @Column(nullable = false)
     private AppointmentStatus status = AppointmentStatus.CONFIRMED;
 
+    /** Faux pour un rendez-vous pris sans compte et sans code e-mail : le cabinet confirme alors par WhatsApp ou téléphone. */
+    @Column(name = "contact_verified", nullable = false)
+    private boolean contactVerified = true;
+
     @Column(name = "reminder_sent", nullable = false)
     private boolean reminderSent = false;
 

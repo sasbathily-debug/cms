@@ -17,6 +17,9 @@ public interface AppointmentService {
 
     AppointmentDto create(AppointmentRequest request, UUID userId);
 
+    /** Rendez-vous pris sans compte ; `contactVerified` dit si l'adresse e-mail du patient a été confirmée par un code. */
+    AppointmentDto createGuest(AppointmentRequest request, boolean contactVerified);
+
     Page<AppointmentDto> findAll(AppointmentStatus status, LocalDate date, LocalDate from, LocalDate to, String search, boolean pastDue, Pageable pageable);
 
     Page<AppointmentDto> findAllForUser(UUID userId, Pageable pageable);

@@ -18,6 +18,7 @@ public record AppointmentDto(
         String message,
         UUID userId,
         AppointmentStatus status,
+        boolean contactVerified,
         Instant createdAt
 ) {
 }
