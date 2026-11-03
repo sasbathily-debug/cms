@@ -75,6 +75,15 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public AppointmentDto create(AppointmentRequest request, UUID userId) {
+        return book(request, userId, true);
+    }
+
+    @Override
+    public AppointmentDto createGuest(AppointmentRequest request, boolean contactVerified) {
+        return book(request, null, contactVerified);
+    }
+
+    private AppointmentDto book(AppointmentRequest request, UUID userId, boolean contactVerified) {
         Appointment appointment = new Appointment(
                 request.fullName(),
                 request.phone(),
@@ -85,6 +94,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 request.message(),
                 userId
         );
+        appointment.setContactVerified(contactVerified);
         Appointment saved;
         try {
             saved = appointmentRepository.saveAndFlush(appointment);
