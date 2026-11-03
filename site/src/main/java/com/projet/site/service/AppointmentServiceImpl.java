@@ -1,10 +1,7 @@
 package com.projet.site.service;
 
-import com.projet.integration.mail.EmailContent;
-import com.projet.integration.mail.EmailMessage;
-import com.projet.integration.mail.EmailSender;
-import com.projet.integration.mail.EmailTemplates;
-import com.projet.integration.notification.WhatsAppNotifier;
+import com.projet.integration.notification.AppointmentNotice;
+import com.projet.integration.notification.AppointmentNotifier;
 import com.projet.user.dto.UserDto;
 import com.projet.user.exception.UserNotFoundException;
 import com.projet.user.service.UserService;
@@ -37,6 +34,8 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,9 +48,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentStatusEventRepository statusEventRepository;
     private final AppointmentMapper appointmentMapper;
     private final AppointmentStatusEventMapper statusEventMapper;
-    private final EmailSender emailSender;
-    private final WhatsAppNotifier whatsAppNotifier;
+    private final AppointmentNotifier notifier;
     private final UserService userService;
+    private final SiteSettingsService siteSettingsService;
     private final String frontendUrl;
 
     public AppointmentServiceImpl(
@@ -59,17 +58,17 @@ public class AppointmentServiceImpl implements AppointmentService {
             AppointmentStatusEventRepository statusEventRepository,
             AppointmentMapper appointmentMapper,
             AppointmentStatusEventMapper statusEventMapper,
-            EmailSender emailSender,
-            WhatsAppNotifier whatsAppNotifier,
+            AppointmentNotifier notifier,
             UserService userService,
+            SiteSettingsService siteSettingsService,
             @Value("${app.frontend-url}") String frontendUrl) {
         this.appointmentRepository = appointmentRepository;
         this.statusEventRepository = statusEventRepository;
         this.appointmentMapper = appointmentMapper;
         this.statusEventMapper = statusEventMapper;
-        this.emailSender = emailSender;
-        this.whatsAppNotifier = whatsAppNotifier;
+        this.notifier = notifier;
         this.userService = userService;
+        this.siteSettingsService = siteSettingsService;
         this.frontendUrl = frontendUrl;
     }
 
@@ -243,80 +242,71 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private void sendReminderNotifications(Appointment appointment) {
-        boolean sendEmail = true;
-        boolean sendWhatsApp = true;
+        boolean wantsEmail = true;
+        boolean wantsPhoneMessage = true;
 
         if (appointment.getUserId() != null) {
             try {
                 UserDto user = userService.getById(appointment.getUserId());
-                sendEmail = user.emailReminders();
-                sendWhatsApp = user.smsReminders();
+                wantsEmail = user.emailReminders();
+                wantsPhoneMessage = user.smsReminders();
             } catch (UserNotFoundException e) {
                 log.warn("Rappel : utilisateur {} introuvable, envoi par défaut", appointment.getUserId());
             }
         }
 
-        String dateInfo = appointment.getPreferredDate() != null
-                ? " pour le " + appointment.getPreferredDate() + " à " + appointment.getPreferredTime()
-                : "";
-        String ctaUrl = frontendUrl + "/client";
+        notifier.notify(notice(appointment, AppointmentNotice.Kind.REMINDER, wantsEmail, wantsPhoneMessage));
+    }
 
-        if (sendEmail && StringUtils.hasText(appointment.getEmail())) {
-            EmailContent content = EmailTemplates.appointmentReminder(appointment.getFullName(), dateInfo, ctaUrl);
-            trySend(appointment.getEmail(), content);
-        }
-
-        if (sendWhatsApp) {
-            try {
-                whatsAppNotifier.sendAppointmentReminder(appointment.getPhone(), appointment.getFullName(), dateInfo, ctaUrl);
-            } catch (RuntimeException e) {
-                log.warn("Échec de l'envoi WhatsApp à {} : {}", appointment.getPhone(), e.getMessage());
+    private void sendStatusChangeEmail(Appointment appointment) {
+        switch (appointment.getStatus()) {
+            case CONFIRMED -> sendConfirmedNotifications(appointment);
+            case CANCELLED -> notifier.notify(notice(appointment, AppointmentNotice.Kind.CANCELLED, true, true));
+            default -> {
+                // Les autres changements de statut ne préviennent pas le patient.
             }
         }
     }
 
-    private void sendStatusChangeEmail(Appointment appointment) {
-        if (appointment.getStatus() == AppointmentStatus.CONFIRMED) {
-            sendConfirmedNotifications(appointment);
-            return;
-        }
-        if (!StringUtils.hasText(appointment.getEmail())) {
-            return;
-        }
-
-        EmailContent content = switch (appointment.getStatus()) {
-            case CANCELLED -> EmailTemplates.appointmentCancelled(appointment.getFullName(), frontendUrl + "/#rdv");
-            default -> null;
-        };
-
-        if (content != null) {
-            trySend(appointment.getEmail(), content);
-        }
-    }
-
     private void sendConfirmedNotifications(Appointment appointment) {
-        String dateInfo = appointment.getPreferredDate() != null
-                ? " pour le " + appointment.getPreferredDate() + " à " + appointment.getPreferredTime()
-                : "";
-        String ctaUrl = frontendUrl + "/client";
-
-        if (StringUtils.hasText(appointment.getEmail())) {
-            EmailContent content = EmailTemplates.appointmentConfirmed(appointment.getFullName(), dateInfo, ctaUrl);
-            trySend(appointment.getEmail(), content);
-        }
-
-        try {
-            whatsAppNotifier.sendAppointmentConfirmed(appointment.getPhone(), appointment.getFullName(), dateInfo, ctaUrl);
-        } catch (RuntimeException e) {
-            log.warn("Échec de l'envoi WhatsApp à {} : {}", appointment.getPhone(), e.getMessage());
-        }
+        notifier.notify(notice(appointment, AppointmentNotice.Kind.CONFIRMED, true, true));
     }
 
-    private void trySend(String to, EmailContent content) {
+    private AppointmentNotice notice(Appointment appointment, AppointmentNotice.Kind kind, boolean wantsEmail, boolean wantsPhoneMessage) {
+        String cabinetPhone = null;
+        String cabinetWhatsapp = null;
         try {
-            emailSender.send(new EmailMessage(to, content.subject(), content.text(), content.html()));
+            var settings = siteSettingsService.get();
+            cabinetPhone = settings.phone();
+            cabinetWhatsapp = settings.whatsappNumber();
         } catch (RuntimeException e) {
-            log.warn("Échec de l'envoi d'email à {} : {}", to, e.getMessage());
+            log.warn("Réglages du site indisponibles pour prévenir le patient : {}", e.getMessage());
         }
+        return new AppointmentNotice(
+                kind,
+                appointment.getFullName(),
+                appointment.getPhone(),
+                appointment.getEmail(),
+                dateInfo(appointment),
+                appointment.getUserId() == null,
+                cabinetPhone,
+                cabinetWhatsapp,
+                frontendUrl,
+                wantsEmail,
+                wantsPhoneMessage);
+    }
+
+    private static final DateTimeFormatter DAY_FORMAT = DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH);
+
+    /** « pour le mardi 10 novembre à 9h00 » (et non « 2026-11-10 à 09:00:00 »). */
+    static String dateInfo(Appointment appointment) {
+        if (appointment.getPreferredDate() == null) {
+            return "";
+        }
+        String hour = appointment.getPreferredTime() == null
+                ? ""
+                : " à " + appointment.getPreferredTime().getHour() + "h"
+                        + String.format("%02d", appointment.getPreferredTime().getMinute());
+        return " pour le " + DAY_FORMAT.format(appointment.getPreferredDate()) + hour;
     }
 }
