@@ -61,29 +61,42 @@ public final class EmailTemplates {
     }
 
     public static EmailContent appointmentConfirmed(String fullName, String dateInfo, String appUrl) {
+        return appointmentConfirmed(fullName, dateInfo, "Voir mes rendez-vous", appUrl, null);
+    }
+
+    /** `note` (facultative) : une phrase en plus, par exemple comment déplacer ou annuler sans compte. */
+    public static EmailContent appointmentConfirmed(String fullName, String dateInfo, String ctaLabel, String ctaUrl, String note) {
         String subject = "Votre rendez-vous est confirmé";
         String text = "Bonjour " + fullName + ",\n\nVotre rendez-vous a été confirmé" + dateInfo
-                + ".\n\nÀ bientôt,\nCabinet du Dr Aïssatou Mamadou Fall";
+                + "." + (note != null ? "\n\n" + note : "")
+                + "\n\nÀ bientôt,\nCabinet du Dr Aïssatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(fullName) + ",")
                 + statusBadge("Confirmé", "#E3F1E6", "#2E7D46")
                 + paragraph("Votre rendez-vous a été confirmé" + escape(dateInfo) + ".")
+                + (note != null ? paragraph(escape(note)) : "")
                 + paragraph("À bientôt !");
 
-        return new EmailContent(subject, text, wrap(subject, body, "Voir mes rendez-vous", appUrl));
+        return new EmailContent(subject, text, wrap(subject, body, ctaLabel, ctaUrl));
     }
 
     public static EmailContent appointmentReminder(String fullName, String dateInfo, String appUrl) {
+        return appointmentReminder(fullName, dateInfo, "Voir mes rendez-vous", appUrl, null);
+    }
+
+    public static EmailContent appointmentReminder(String fullName, String dateInfo, String ctaLabel, String ctaUrl, String note) {
         String subject = "Rappel : votre rendez-vous a lieu demain";
         String text = "Bonjour " + fullName + ",\n\nPetit rappel : votre rendez-vous a lieu demain" + dateInfo
-                + ".\n\nÀ demain,\nCabinet du Dr Aïssatou Mamadou Fall";
+                + "." + (note != null ? "\n\n" + note : "")
+                + "\n\nÀ demain,\nCabinet du Dr Aïssatou Mamadou Fall";
 
         String body = paragraph("Bonjour " + escape(fullName) + ",")
                 + statusBadge("Rappel", "#FDF0DC", "#B5762A")
                 + paragraph("Petit rappel : votre rendez-vous a lieu demain" + escape(dateInfo) + ".")
+                + (note != null ? paragraph(escape(note)) : "")
                 + paragraph("À demain !");
 
-        return new EmailContent(subject, text, wrap(subject, body, "Voir mes rendez-vous", appUrl));
+        return new EmailContent(subject, text, wrap(subject, body, ctaLabel, ctaUrl));
     }
 
     public static EmailContent appointmentCancelled(String fullName, String appUrl) {
